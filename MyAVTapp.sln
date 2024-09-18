@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35222.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MyAVTapp", "MyAVTapp\MyAVTapp.vcxproj", "{500779E0-CB88-4EFC-98A0-9C24D76C5782}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{500779E0-CB88-4EFC-98A0-9C24D76C5782}.Debug|x64.ActiveCfg = Debug|x64
+		{500779E0-CB88-4EFC-98A0-9C24D76C5782}.Debug|x64.Build.0 = Debug|x64
+		{500779E0-CB88-4EFC-98A0-9C24D76C5782}.Debug|x86.ActiveCfg = Debug|Win32
+		{500779E0-CB88-4EFC-98A0-9C24D76C5782}.Debug|x86.Build.0 = Debug|Win32
+		{500779E0-CB88-4EFC-98A0-9C24D76C5782}.Release|x64.ActiveCfg = Release|x64
+		{500779E0-CB88-4EFC-98A0-9C24D76C5782}.Release|x64.Build.0 = Release|x64
+		{500779E0-CB88-4EFC-98A0-9C24D76C5782}.Release|x86.ActiveCfg = Release|Win32
+		{500779E0-CB88-4EFC-98A0-9C24D76C5782}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1AC94A56-A403-4EE1-90F2-F1901BCAF8C2}
+	EndGlobalSection
+EndGlobal
