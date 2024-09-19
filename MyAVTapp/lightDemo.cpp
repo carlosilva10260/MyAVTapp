@@ -152,7 +152,7 @@ void renderScene(void) {
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
 	for (int i = 0; i < 1; ++i) {
-		for (int j = 0; j < 3; ++j) {
+		for (int j = 0; j < 5; ++j) {
 
 			// send the material
 			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -164,16 +164,25 @@ void renderScene(void) {
 			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 			glUniform1f(loc, myMeshes[objId].mat.shininess);
 			pushMatrix(MODEL);
-			translate(MODEL, i * 2.0f, 0.0f, j * 2.0f);
 
-			if (i == 0 && j == 0) {
+			if (i == 0 && j == 0) { //water
 				rotate(MODEL, -90, 1, 0, 0);
 			}
-			else if (i == 0 && j == 1) {
+			else if (i == 0 && j == 1) { //pawn
 				scale(MODEL, 0.75, 0.75, 0.75);
 			}
-			else if (i == 0 && j == 1) {
+			else if (i == 0 && j == 2) { // big island
 				scale(MODEL, 1.5, 1, 1);
+				translate(MODEL, 50.0f, 0.0f, 50.0f);
+
+			}
+			else if (i == 0 && j == 3) { //tree base
+				scale(MODEL, 0.5, 0.5, 0.5);
+				translate(MODEL, 50.0f, 12.0f, 50.0f);
+			}
+			else if (i == 0 && j == 4) { //tree top
+				scale(MODEL, 0.5, 0.5, 0.5);
+				translate(MODEL, 50.0f, 14.0f, 50.0f);
 			}
 
 			// send matrices to OGL
@@ -457,6 +466,30 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 
+	int numOfTrees = 1;
+
+	for (int i = 0; i < numOfTrees; i++) {
+		amesh = createCylinder(4.0f, 1.0f, 50);
+		memcpy(amesh.mat.ambient, pawn_amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, pawn_diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, pawn_spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+
+
+		amesh = createCone(4.0f, 2.0f, 50);
+		memcpy(amesh.mat.ambient, grass_amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, grass_diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, grass_spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+
+
+	}
 
 
 	// some GL settings
