@@ -51,6 +51,7 @@ const string font_name = "fonts/arial.ttf";
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
+vector<struct MyMesh> boatMeshes;
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -126,6 +127,93 @@ void changeSize(int w, int h) {
 // Render stufff
 //
 
+
+void renderBoat() {
+
+	GLint loc;
+
+	FrameCount++;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// load identity matrices
+	loadIdentity(VIEW);
+	loadIdentity(MODEL);
+	// set the camera using a function similar to gluLookAt
+	lookAt(camX, camY, camZ, 0, 0, 0, 0, 1, 0);
+
+	// use our shader
+
+	glUseProgram(shader.getProgramIndex());
+
+	//send the light position in eye coordinates
+	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
+
+	float res[4];
+	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
+	glUniform4fv(lPos_uniformId, 1, res);
+
+	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+
+	for (int i = 0; i < 5; ++i) {
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, boatMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, boatMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, boatMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, boatMeshes[objId].mat.shininess);
+		pushMatrix(MODEL);
+
+
+		if (i == 0) { // pawn
+			translate(MODEL, 1.0f, 0.5f, 0.0f);
+			scale(MODEL, 0.25f, 0.25, 0.25);
+		}
+		if (i == 1) { //base
+			translate(MODEL, 0.0f, 0.0f, -0.5f);
+			scale(MODEL, 3.0, 0.5, 1.0);
+		}
+		if (i == 2) { // front
+			translate(MODEL, 3.0f, 0.0f, 0.0f);
+			scale(MODEL, 0.25f, 0.25f, 0.25f);
+			rotate(MODEL, -90, 0, 0, 1);
+			rotate(MODEL, -45, 0, 1, 0);
+		}
+		if (i == 3) { //oars
+			translate(MODEL, 1.5f, 0.0f, 1.0f);
+			scale(MODEL, 0.1f, 1.0f, 0.1f);
+
+		}
+		if (i == 4) { //oars
+			translate(MODEL, 1.5f, 0.0f, -1.0f);
+			scale(MODEL, 0.1f, 1.0f, 0.1f);
+
+		}
+
+	
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(boatMeshes[objId].vao);
+
+		glDrawElements(boatMeshes[objId].type, boatMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
+	}
+
+	
+
+}
+
 void renderScene(void) {
 
 	GLint loc;
@@ -151,8 +239,9 @@ void renderScene(void) {
 
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
+	renderBoat();
 	for (int i = 0; i < 1; ++i) {
-		for (int j = 0; j < 5; ++j) {
+		for (int j = 0; j < 4; ++j) {
 
 			// send the material
 			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -168,21 +257,17 @@ void renderScene(void) {
 			if (i == 0 && j == 0) { //water
 				rotate(MODEL, -90, 1, 0, 0);
 			}
-			else if (i == 0 && j == 1) { //pawn
-				scale(MODEL, 0.75, 0.75, 0.75);
-			}
-			else if (i == 0 && j == 2) { // big island
-				scale(MODEL, 1.5, 1, 1);
+			else if (i == 0 && j == 1) { // big island
 				translate(MODEL, 50.0f, 0.0f, 50.0f);
-
+				scale(MODEL, 1.5, 1, 1);
 			}
-			else if (i == 0 && j == 3) { //tree base
+			else if (i == 0 && j == 2) { //tree base
+				translate(MODEL, 50.0f, 10.0f, 50.0f);
 				scale(MODEL, 0.5, 0.5, 0.5);
-				translate(MODEL, 50.0f, 12.0f, 50.0f);
 			}
-			else if (i == 0 && j == 4) { //tree top
+			else if (i == 0 && j == 3) { //tree top
+				translate(MODEL, 50.0f, 11.0f, 50.0f);
 				scale(MODEL, 0.5, 0.5, 0.5);
-				translate(MODEL, 50.0f, 14.0f, 50.0f);
 			}
 
 			// send matrices to OGL
@@ -451,7 +536,7 @@ void init()
 	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
+	boatMeshes.push_back(amesh);
 
 	float grass_amb[] = { 0.0f, 0.3f, 0.0f, 1.0f };
 	float grass_diff[] = { 0.1f, 0.8f, 0.1f, 1.0f };
@@ -490,6 +575,37 @@ void init()
 
 
 	}
+
+
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, pawn_amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, pawn_diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, pawn_spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	boatMeshes.push_back(amesh);
+
+	amesh = createCone(1.0f, 2.0f, 4);
+	memcpy(amesh.mat.ambient, pawn_amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, pawn_diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, pawn_spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	boatMeshes.push_back(amesh);
+
+	amesh = createCylinder(1.0f, 1.0f, 50);
+	memcpy(amesh.mat.ambient, pawn_amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, pawn_diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, pawn_spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	boatMeshes.push_back(amesh);
+	boatMeshes.push_back(amesh);
+
+
 
 
 	// some GL settings
