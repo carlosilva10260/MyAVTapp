@@ -52,6 +52,8 @@ const string font_name = "fonts/arial.ttf";
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
 vector<struct MyMesh> boatMeshes;
+vector<struct MyMesh> treeMeshes;
+vector<struct MyMesh> floatMeshes;
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -127,6 +129,136 @@ void changeSize(int w, int h) {
 // Render stufff
 //
 
+void renderFloats() {
+
+	GLint loc;
+
+	FrameCount++;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// load identity matrices
+	loadIdentity(VIEW);
+	loadIdentity(MODEL);
+	// set the camera using a function similar to gluLookAt
+	lookAt(camX, camY, camZ, 0, 0, 0, 0, 1, 0);
+
+	// use our shader
+
+	glUseProgram(shader.getProgramIndex());
+
+	//send the light position in eye coordinates
+	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
+
+	float res[4];
+	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
+	glUniform4fv(lPos_uniformId, 1, res);
+
+	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+
+	for (int i = 0; i < 4; ++i) {
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, floatMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, floatMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, floatMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, boatMeshes[objId].mat.shininess);
+		pushMatrix(MODEL);
+
+		if (i == 0 || i == 1) {
+			translate(MODEL, 10.0f, 0.2f, 10.0f);
+		}
+		if (i == 2 || i == 3) {
+			translate(MODEL, 10.0f, 0.2f, 0.0f);
+		}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(floatMeshes[objId].vao);
+
+		glDrawElements(floatMeshes[objId].type, floatMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
+	}
+}
+
+void renderTree(){
+	GLint loc;
+
+	FrameCount++;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// load identity matrices
+	loadIdentity(VIEW);
+	loadIdentity(MODEL);
+	// set the camera using a function similar to gluLookAt
+	lookAt(camX, camY, camZ, 0, 0, 0, 0, 1, 0);
+
+	// use our shader
+
+	glUseProgram(shader.getProgramIndex());
+
+	//send the light position in eye coordinates
+	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
+
+	float res[4];
+	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
+	glUniform4fv(lPos_uniformId, 1, res);
+
+	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+
+	for (int i = 0; i < 2; ++i) {
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, treeMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, treeMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, treeMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, treeMeshes[objId].mat.shininess);
+		pushMatrix(MODEL);
+
+
+		if (i == 0) { //tree base
+			translate(MODEL, 50.0f, 10.0f, 50.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+			}
+		else if (i == 1) { //tree top
+			translate(MODEL, 50.0f, 11.0f, 50.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+			}
+
+
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(treeMeshes[objId].vao);
+
+		glDrawElements(treeMeshes[objId].type, treeMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
+	}
+
+
+
+}
 
 void renderBoat() {
 
@@ -238,10 +370,12 @@ void renderScene(void) {
 	glUniform4fv(lPos_uniformId, 1, res);
 
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
-
+	renderTree();
+	renderFloats();
 	renderBoat();
+
 	for (int i = 0; i < 1; ++i) {
-		for (int j = 0; j < 4; ++j) {
+		for (int j = 0; j < 2; ++j) {
 
 			// send the material
 			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -260,14 +394,6 @@ void renderScene(void) {
 			else if (i == 0 && j == 1) { // big island
 				translate(MODEL, 50.0f, 0.0f, 50.0f);
 				scale(MODEL, 1.5, 1, 1);
-			}
-			else if (i == 0 && j == 2) { //tree base
-				translate(MODEL, 50.0f, 10.0f, 50.0f);
-				scale(MODEL, 0.5, 0.5, 0.5);
-			}
-			else if (i == 0 && j == 3) { //tree top
-				translate(MODEL, 50.0f, 11.0f, 50.0f);
-				scale(MODEL, 0.5, 0.5, 0.5);
 			}
 
 			// send matrices to OGL
@@ -561,7 +687,7 @@ void init()
 		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
 		amesh.mat.shininess = shininess;
 		amesh.mat.texCount = texcount;
-		myMeshes.push_back(amesh);
+		treeMeshes.push_back(amesh);
 
 
 		amesh = createCone(4.0f, 2.0f, 50);
@@ -571,7 +697,7 @@ void init()
 		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
 		amesh.mat.shininess = shininess;
 		amesh.mat.texCount = texcount;
-		myMeshes.push_back(amesh);
+		treeMeshes.push_back(amesh);
 
 
 	}
@@ -604,6 +730,35 @@ void init()
 	amesh.mat.texCount = texcount;
 	boatMeshes.push_back(amesh);
 	boatMeshes.push_back(amesh);
+
+	int numOfFloats = 2;
+
+	float float_amb[] = { 0.3f, 0.0f, 0.0f, 1.0f };
+	float float_diff[] = { 0.8f, 0.1f, 0.1f, 1.0f };
+	float float_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+
+	for (int i = 0; i < numOfFloats; i++) {
+
+		amesh = createCylinder(6.0f, 0.5f, 50);
+		memcpy(amesh.mat.ambient, float_amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, float_diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, float_spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		floatMeshes.push_back(amesh);
+
+
+		amesh = createSphere(1.0f, 10);
+		memcpy(amesh.mat.ambient, float_amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, float_diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, float_spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		floatMeshes.push_back(amesh);
+
+	}
 
 
 
