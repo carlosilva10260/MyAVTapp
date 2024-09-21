@@ -28,13 +28,14 @@
 
 // Use Very Simple Libs
 #include "VSShaderlib.h"
-#include "AVTmathLib.h"
 #include "VertexAttrDef.h"
+#include "AVTmathLib.h"
 #include "geometry.h"
 
 #include "avtFreeType.h"
 
 #include "camera.h"
+#include "boat.h"
 
 using namespace std;
 
@@ -56,6 +57,9 @@ vector<struct MyMesh> myMeshes;
 vector<struct MyMesh> boatMeshes;
 vector<struct MyMesh> treeMeshes;
 vector<struct MyMesh> floatMeshes;
+
+// Boat
+Boat boat;
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -123,7 +127,13 @@ void changeSize(int w, int h) {
 	// set the projection matrix
 	ratio = (1.0f * w) / h;
 	loadIdentity(PROJECTION);
-	perspective(53.13f, ratio, 0.1f, 1000.0f);
+	const auto cameraType = cams[activeCamera].getType();
+	if (cameraType == 1) {
+		ortho(ratio * (-25), ratio * 25, -25, 25, 1.0f, 100.0f);
+	}
+	else {
+		perspective(53.13f, ratio, 1.0f, 100.0f);
+	}
 }
 
 
@@ -132,13 +142,16 @@ void changeSize(int w, int h) {
 // Render stufff
 //
 
-void setupRender() {
+static void setupRender() {
 	FrameCount++;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// load identity matrices
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
+	if (activeCamera == 2) {
+		cams[activeCamera].setTarget({ boat.pos[0], boat.pos[1], boat.pos[2] });
+	}
 	const auto cameraPos = cams[activeCamera].getPos();
 	const auto cameraTarget = cams[activeCamera].getTarget();
 	const auto cameraType = cams[activeCamera].getType();
@@ -168,22 +181,24 @@ void setupRender() {
 	glUniform4fv(lPos_uniformId, 1, res);
 }
 
-void renderFloats() {
-	setupRender();
+static void sendMaterial(const Material& mat) {
 	GLint loc;
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+	glUniform4fv(loc, 1, mat.ambient);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+	glUniform4fv(loc, 1, mat.diffuse);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+	glUniform4fv(loc, 1, mat.specular);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+	glUniform1f(loc, mat.shininess);
+}
 
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+static void renderFloats() {
+	setupRender();
 
 	for (int i = 0; i < 4; ++i) {
 		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, floatMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, floatMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, floatMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, boatMeshes[objId].mat.shininess);
+		sendMaterial(floatMeshes[i].mat);
 		pushMatrix(MODEL);
 
 		if (i == 0 || i == 1) {
@@ -201,33 +216,21 @@ void renderFloats() {
 		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
 		// Render mesh
-		glBindVertexArray(floatMeshes[objId].vao);
+		glBindVertexArray(floatMeshes[i].vao);
 
-		glDrawElements(floatMeshes[objId].type, floatMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glDrawElements(floatMeshes[i].type, floatMeshes[i].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		popMatrix(MODEL);
-		objId++;
 	}
 }
 
 void renderTree(){
-	GLint loc;
-
 	setupRender();
-
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
 	for (int i = 0; i < 2; ++i) {
 		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, treeMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, treeMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, treeMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, treeMeshes[objId].mat.shininess);
+		sendMaterial(treeMeshes[i].mat);
 		pushMatrix(MODEL);
 
 
@@ -250,39 +253,27 @@ void renderTree(){
 		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
 		// Render mesh
-		glBindVertexArray(treeMeshes[objId].vao);
+		glBindVertexArray(treeMeshes[i].vao);
 
-		glDrawElements(treeMeshes[objId].type, treeMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glDrawElements(treeMeshes[i].type, treeMeshes[i].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		popMatrix(MODEL);
-		objId++;
 	}
-
-
-
 }
 
-void renderBoat() {
+static void renderBoat() {
+	loadIdentity(MODEL);
 
-	GLint loc;
+	pushMatrix(MODEL);
 
-	setupRender();
-
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
-
+	translate(MODEL, boat.pos[0], boat.pos[1], boat.pos[2]);
+	rotate(MODEL, boat.angle, 0, 1.0f, 0);
+	
 	for (int i = 0; i < 5; ++i) {
 		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, boatMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, boatMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, boatMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, boatMeshes[objId].mat.shininess);
+		sendMaterial(boatMeshes[i].mat);
 		pushMatrix(MODEL);
-
 
 		if (i == 0) { // pawn
 			translate(MODEL, 1.0f, 0.5f, 0.0f);
@@ -309,7 +300,44 @@ void renderBoat() {
 
 		}
 
-	
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(boatMeshes[i].vao);
+		glDrawElements(boatMeshes[i].type, boatMeshes[i].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+	}
+
+	popMatrix(MODEL);
+}
+
+void renderScene(void) {
+	boat.updateBoatMovement();
+	boat.updateBoatRotationAngle();
+
+	setupRender();
+	//renderTree();
+	//renderFloats();
+
+	for (int j = 0; j < 2; ++j) {
+		// send the material
+		sendMaterial(myMeshes[j].mat);
+		pushMatrix(MODEL);
+
+		if (j == 0) { //water
+			rotate(MODEL, -90, 1, 0, 0);
+		}
+		else if (j == 1) { // big island
+			translate(MODEL, 50.0f, 0.0f, 50.0f);
+			scale(MODEL, 1.5, 1, 1);
+		}
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -319,69 +347,15 @@ void renderBoat() {
 		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
 		// Render mesh
-		glBindVertexArray(boatMeshes[objId].vao);
+		glBindVertexArray(myMeshes[j].vao);
 
-		glDrawElements(boatMeshes[objId].type, boatMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glDrawElements(myMeshes[j].type, myMeshes[j].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		popMatrix(MODEL);
-		objId++;
 	}
 
-	
-
-}
-
-void renderScene(void) {
-
-	GLint loc;
-
-	setupRender();
-
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
-	renderTree();
-	renderFloats();
 	renderBoat();
-
-	for (int i = 0; i < 1; ++i) {
-		for (int j = 0; j < 2; ++j) {
-
-			// send the material
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-			glUniform1f(loc, myMeshes[objId].mat.shininess);
-			pushMatrix(MODEL);
-
-			if (i == 0 && j == 0) { //water
-				rotate(MODEL, -90, 1, 0, 0);
-			}
-			else if (i == 0 && j == 1) { // big island
-				translate(MODEL, 50.0f, 0.0f, 50.0f);
-				scale(MODEL, 1.5, 1, 1);
-			}
-
-			// send matrices to OGL
-			computeDerivedMatrix(PROJ_VIEW_MODEL);
-			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-			computeNormalMatrix3x3();
-			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-			// Render mesh
-			glBindVertexArray(myMeshes[objId].vao);
-
-			glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-			glBindVertexArray(0);
-
-			popMatrix(MODEL);
-			objId++;
-		}
-	}
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -392,18 +366,18 @@ void renderScene(void) {
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
 
 	//viewer at origin looking down at  negative z direction
-	pushMatrix(MODEL);
-	loadIdentity(MODEL);
-	pushMatrix(PROJECTION);
-	loadIdentity(PROJECTION);
-	pushMatrix(VIEW);
-	loadIdentity(VIEW);
-	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-	RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-	RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3f, 0.7f, 0.9f);
-	popMatrix(PROJECTION);
-	popMatrix(VIEW);
-	popMatrix(MODEL);
+	//pushMatrix(MODEL);
+	//loadIdentity(MODEL);
+	//pushMatrix(PROJECTION);
+	//loadIdentity(PROJECTION);
+	//pushMatrix(VIEW);
+	//loadIdentity(VIEW);
+	//ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
+	//RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
+	//RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3f, 0.7f, 0.9f);
+	//popMatrix(PROJECTION);
+	//popMatrix(VIEW);
+	//popMatrix(MODEL);
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
@@ -438,7 +412,31 @@ void processKeys(unsigned char key, int xx, int yy)
 	case '3':
 		activeCamera = 2;
 		break;
+
+	case 'A': case 'a':
+		// Left paddle stroke rotates the boat slightly to the left
+		boat.rotate(-5.0f); // Rotate by -5 degrees
+		boat.accelerate();
+		break;
+	case 'D': case 'd':
+		// Right paddle stroke rotates the boat slightly to the right
+		boat.rotate(5.0f); // Rotate by 5 degrees
+		boat.accelerate();
+		break;
+	case 'S': case 's':
+		// Invert the paddle direction
+		boat.directionModifier *= -1;
+		break;
+	//case 'O': case 'o':
+	//	// Increase paddle strength
+	//	boat.addPaddleStrength(0.1f); // Increase by 0.1
+	//	break;
+	//case 'P': case 'p':
+	//	// Decrease paddle strength
+	//	boat.addPaddleStrength(-0.1f); // Decrease by 0.1
+	//	break;
 	}
+
 }
 
 
@@ -618,8 +616,11 @@ void init()
 	camY = r * sin(beta * 3.14f / 180.0f);*/
 
 	cams[0].setPos({ 4, 16, 4 });
-	cams[1].setPos({ 0, 8, 0 });
+	cams[1].setPos({ 4, 8, 4 });
 	cams[1].setType(1);
+
+	cams[2].setPos({ 4, 16, 4 });
+	cams[2].setTarget({});
 
 	float h20_amb[] = { 0.0f, 0.0f, 0.25f, 1.0f };
 	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 1.0f };

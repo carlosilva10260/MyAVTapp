@@ -18,7 +18,7 @@ Author: João Madeiras Pereira
 #define M_PI       3.14159265358979323846f
 #endif
 
-static inline float 
+inline float 
 DegToRad(float degrees) 
 { 
 	return (float)(degrees * (M_PI / 180.0f));

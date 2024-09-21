@@ -34,6 +34,8 @@
 			PROJ_VIEW_MODEL
 		};
 
+		inline float DegToRad(float degrees);
+
 		/** Similar to glTranslate*. 
 		  *
 		  * \param aType any value from MatrixTypes
