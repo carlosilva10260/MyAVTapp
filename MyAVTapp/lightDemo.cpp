@@ -34,6 +34,8 @@
 
 #include "avtFreeType.h"
 
+#include "camera.h"
+
 using namespace std;
 
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
@@ -71,7 +73,8 @@ GLint lPos_uniformId;
 GLint tex_loc, tex_loc1, tex_loc2;
 
 // Camera Position
-float camX, camY, camZ;
+int activeCamera = 0;
+Camera cams[3];
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
@@ -129,17 +132,29 @@ void changeSize(int w, int h) {
 // Render stufff
 //
 
-void renderFloats() {
-
-	GLint loc;
-
+void setupRender() {
 	FrameCount++;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// load identity matrices
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
+
+	const auto cameraPos = cams[activeCamera].getPos();
+	const auto cameraTarget = cams[activeCamera].getTarget();
+	const auto cameraType = cams[activeCamera].getType();
 	// set the camera using a function similar to gluLookAt
-	lookAt(camX, camY, camZ, 0, 0, 0, 0, 1, 0);
+	lookAt(cameraPos[0], cameraPos[1], cameraPos[2], cameraTarget[0], cameraTarget[1], cameraTarget[2], 0, 1, 0);
+
+	GLint m_view[4];
+	glGetIntegerv(GL_VIEWPORT, m_view);
+	float ratio = (m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
+	loadIdentity(PROJECTION);
+	if (cameraType == 1) {
+		ortho(ratio * (-25), ratio * 25, -25, 25, 1.0f, 100.0f);
+	}
+	else {
+		perspective(53.13f, ratio, 1.0f, 100.0f);
+	}
 
 	// use our shader
 
@@ -151,6 +166,11 @@ void renderFloats() {
 	float res[4];
 	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
 	glUniform4fv(lPos_uniformId, 1, res);
+}
+
+void renderFloats() {
+	setupRender();
+	GLint loc;
 
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
@@ -194,24 +214,7 @@ void renderFloats() {
 void renderTree(){
 	GLint loc;
 
-	FrameCount++;
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// load identity matrices
-	loadIdentity(VIEW);
-	loadIdentity(MODEL);
-	// set the camera using a function similar to gluLookAt
-	lookAt(camX, camY, camZ, 0, 0, 0, 0, 1, 0);
-
-	// use our shader
-
-	glUseProgram(shader.getProgramIndex());
-
-	//send the light position in eye coordinates
-	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
-	float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
+	setupRender();
 
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
@@ -264,24 +267,7 @@ void renderBoat() {
 
 	GLint loc;
 
-	FrameCount++;
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// load identity matrices
-	loadIdentity(VIEW);
-	loadIdentity(MODEL);
-	// set the camera using a function similar to gluLookAt
-	lookAt(camX, camY, camZ, 0, 0, 0, 0, 1, 0);
-
-	// use our shader
-
-	glUseProgram(shader.getProgramIndex());
-
-	//send the light position in eye coordinates
-	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
-	float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
+	setupRender();
 
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
@@ -350,24 +336,7 @@ void renderScene(void) {
 
 	GLint loc;
 
-	FrameCount++;
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// load identity matrices
-	loadIdentity(VIEW);
-	loadIdentity(MODEL);
-	// set the camera using a function similar to gluLookAt
-	lookAt(camX, camY, camZ, 0, 0, 0, 0, 1, 0);
-
-	// use our shader
-
-	glUseProgram(shader.getProgramIndex());
-
-	//send the light position in eye coordinates
-	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
-	float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
+	setupRender();
 
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 	renderTree();
@@ -431,7 +400,7 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
 	RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-	RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
+	RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3f, 0.7f, 0.9f);
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
 	popMatrix(MODEL);
@@ -459,6 +428,16 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
 	case 'n': glDisable(GL_MULTISAMPLE); break;
+
+	case '1':
+		activeCamera = 0;
+		break;
+	case '2':
+		activeCamera = 1;
+		break;
+	case '3':
+		activeCamera = 2;
+		break;
 	}
 }
 
@@ -530,9 +509,13 @@ void processMouseMotion(int xx, int yy)
 			rAux = 0.1f;
 	}
 
-	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camY = rAux * sin(betaAux * 3.14f / 180.0f);
+	float camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	float camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	float camY = rAux * sin(betaAux * 3.14f / 180.0f);
+
+	if (activeCamera == 2) {
+		cams[activeCamera].setPos({ camX, camY, camZ });
+	}
 
 	//  uncomment this if not using an idle or refresh func
 	//	glutPostRedisplay();
@@ -545,9 +528,11 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 	if (r < 0.1f)
 		r = 0.1f;
 
-	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r * sin(beta * 3.14f / 180.0f);
+	float camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
+	float camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
+	float camY = r * sin(beta * 3.14f / 180.0f);
+
+	cams[activeCamera].setPos({ camX, camY, camZ });
 
 	//  uncomment this if not using an idle or refresh func
 	//	glutPostRedisplay();
@@ -628,10 +613,13 @@ void init()
 	freeType_init(font_name);
 
 	// set the camera position based on its spherical coordinates
-	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
+	/*camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r * sin(beta * 3.14f / 180.0f);
+	camY = r * sin(beta * 3.14f / 180.0f);*/
 
+	cams[0].setPos({ 4, 16, 4 });
+	cams[1].setPos({ 0, 8, 0 });
+	cams[1].setType(1);
 
 	float h20_amb[] = { 0.0f, 0.0f, 0.25f, 1.0f };
 	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 1.0f };
