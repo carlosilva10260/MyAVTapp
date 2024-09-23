@@ -59,6 +59,7 @@ vector<struct MyMesh> treeMeshes;
 vector<struct MyMesh> floatMeshes;
 
 // Boat
+
 Boat boat;
 
 //External array storage defined in AVTmathLib.cpp
@@ -194,7 +195,7 @@ static void sendMaterial(const Material& mat) {
 }
 
 static void renderFloats() {
-	setupRender();
+	pushMatrix(MODEL);
 
 	for (int i = 0; i < 4; ++i) {
 		// send the material
@@ -223,10 +224,11 @@ static void renderFloats() {
 
 		popMatrix(MODEL);
 	}
+	popMatrix(MODEL);
 }
 
 void renderTree(){
-	setupRender();
+	pushMatrix(MODEL);
 
 	for (int i = 0; i < 2; ++i) {
 		// send the material
@@ -260,6 +262,7 @@ void renderTree(){
 
 		popMatrix(MODEL);
 	}
+	popMatrix(MODEL);
 }
 
 static void renderBoat() {
@@ -323,8 +326,10 @@ void renderScene(void) {
 	boat.updateBoatRotationAngle();
 
 	setupRender();
-	//renderTree();
-	//renderFloats();
+
+	renderTree();
+	renderFloats();
+	
 
 	for (int j = 0; j < 2; ++j) {
 		// send the material
@@ -356,6 +361,7 @@ void renderScene(void) {
 	}
 
 	renderBoat();
+
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
