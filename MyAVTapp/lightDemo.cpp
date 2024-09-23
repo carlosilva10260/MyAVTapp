@@ -92,7 +92,10 @@ float r = 10.0f;
 long myTime, timebase = 0, frame = 0;
 char s[32];
 float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
-
+float leftoarroation = 0.0f;
+float rightoarrotation = 0.0f;
+int leftoar = 0;
+int rightoar = 0;
 
 void timer(int value)
 {
@@ -133,7 +136,7 @@ void changeSize(int w, int h) {
 		ortho(ratio * (-25), ratio * 25, -25, 25, 1.0f, 100.0f);
 	}
 	else {
-		perspective(53.13f, ratio, 1.0f, 100.0f);
+		perspective(53.13f, ratio, 1.0f, 1000.0f);
 	}
 }
 
@@ -176,7 +179,7 @@ static void setupRender() {
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
+	
 	float res[4];
 	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
 	glUniform4fv(lPos_uniformId, 1, res);
@@ -279,27 +282,35 @@ static void renderBoat() {
 		pushMatrix(MODEL);
 
 		if (i == 0) { // pawn
-			translate(MODEL, 1.0f, 0.5f, 0.0f);
+			translate(MODEL, 0.5f, 0.5f, 1.0f);
 			scale(MODEL, 0.25f, 0.25, 0.25);
 		}
 		if (i == 1) { //base
 			translate(MODEL, 0.0f, 0.0f, -0.5f);
-			scale(MODEL, 3.0, 0.5, 1.0);
+			scale(MODEL, 1.0, 0.5, 3.0);
 		}
 		if (i == 2) { // front
-			translate(MODEL, 3.0f, 0.0f, 0.0f);
+			translate(MODEL, 0.5f, 0.0f, 2.5f);
 			scale(MODEL, 0.25f, 0.25f, 0.25f);
-			rotate(MODEL, -90, 0, 0, 1);
-			rotate(MODEL, -45, 0, 1, 0);
+			rotate(MODEL, 90, 1, 0,0);
+			rotate(MODEL, 45, 0, 1, 0);
 		}
 		if (i == 3) { //oars
-			translate(MODEL, 1.5f, 0.0f, 1.0f);
-			scale(MODEL, 0.1f, 1.0f, 0.1f);
+			translate(MODEL, 1.5f, 0.0f, 1.5f);
+			scale(MODEL, 0.1f, 1.5f, 0.1f);
+			if (rightoar) {
+				rotate(MODEL, rightoarrotation, 1, 0, 0);
+				rightoar = 0;
+			}
 
 		}
 		if (i == 4) { //oars
-			translate(MODEL, 1.5f, 0.0f, -1.0f);
-			scale(MODEL, 0.1f, 1.0f, 0.1f);
+			translate(MODEL, -0.5f, 0.0f, 1.5f);
+			scale(MODEL, 0.1f, 1.5f, 0.1f);
+			if (leftoar) {
+				rotate(MODEL, leftoarroation, 1, 0, 0);
+				leftoar = 0;
+			}
 
 		}
 
@@ -423,11 +434,18 @@ void processKeys(unsigned char key, int xx, int yy)
 		// Left paddle stroke rotates the boat slightly to the left
 		boat.rotate(-5.0f); // Rotate by -5 degrees
 		boat.accelerate();
+		leftoarroation += 360.0f;
+		if (leftoarroation >= 360.0f) leftoarroation -= 360.0f;
+		leftoar = 1;
+
 		break;
 	case 'D': case 'd':
 		// Right paddle stroke rotates the boat slightly to the right
 		boat.rotate(5.0f); // Rotate by 5 degrees
 		boat.accelerate();
+		rightoarrotation += 360.0f;
+		if (rightoarrotation >= 360.0f) rightoarrotation -= 360.0f;
+		rightoar = 1;
 		break;
 	case 'S': case 's':
 		// Invert the paddle direction
@@ -552,8 +570,8 @@ GLuint setupShaders() {
 
 	// Shader for models
 	shader.init();
-	shader.loadShader(VSShaderLib::VERTEX_SHADER, "shaders/pointlight_phong.vert");
-	shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight_phong.frag");
+	shader.loadShader(VSShaderLib::VERTEX_SHADER, "shaders/pointlight_gourard.vert");
+	shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight_gourard.frag");
 
 	// set semantics for the shader variables
 	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
