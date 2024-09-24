@@ -155,7 +155,9 @@ static void setupRender() {
 
 	if (activeCamera == 2) {
 		cams[activeCamera].setTarget({ boat.pos[0], boat.pos[1], boat.pos[2] });
+		cams[activeCamera].setPos({ boat.pos[0] - 4, boat.pos[1] + 12, boat.pos[2] - 4 });
 	}
+
 	const auto cameraPos = cams[activeCamera].getPos();
 	const auto cameraTarget = cams[activeCamera].getTarget();
 	const auto cameraType = cams[activeCamera].getType();
@@ -451,14 +453,10 @@ void processKeys(unsigned char key, int xx, int yy)
 		// Invert the paddle direction
 		boat.directionModifier *= -1;
 		break;
-	//case 'O': case 'o':
-	//	// Increase paddle strength
-	//	boat.addPaddleStrength(0.1f); // Increase by 0.1
-	//	break;
-	//case 'P': case 'p':
-	//	// Decrease paddle strength
-	//	boat.addPaddleStrength(-0.1f); // Decrease by 0.1
-	//	break;
+	case 'O': case 'o':
+		// Increase paddle strength
+		boat.addPaddleStrength(0.4f); // Increase by 0.1
+		break;
 	}
 
 }

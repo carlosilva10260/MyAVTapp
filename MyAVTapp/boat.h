@@ -99,5 +99,14 @@ public:
 		// Calculate the angle between the boat's direction vector and the positive Z-axis
 		this->angle = atan2(this->dir[0], this->dir[2]) * (180.0f / 3.14159265f);
 	}
+
+	void addPaddleStrength(float paddleStrength) {
+		if (this->paddleStrength == 0.8f) {
+			this->paddleStrength += paddleStrength;
+		}
+		else {
+			this->paddleStrength = 0.8f;
+		}
+	}
 };
 
