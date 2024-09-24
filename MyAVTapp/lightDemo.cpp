@@ -300,25 +300,29 @@ static void renderBoat() {
 		if (i == 3) { //oars
 			translate(MODEL, 1.5f, 0.0f, 1.5f);
 			rotate(MODEL, 45, 0, 0, 1);
-			if (leftoar) {
+			
+			if (leftoar == 1) {
 				leftang += 5.0f;
-				leftoar = 0;
+				rotate(MODEL, leftang, -0.1 , -0.5, 0);
+				if (leftang > 360.0f) {
+					leftang = 0.0f;
+					leftoar = 0;
+				}
 			}
 			scale(MODEL, 0.1f, 1.0f, 0.1f);
-			
-			if (rightoar) {
-				rotate(MODEL, rightang, 0,0,1);
-				rightoar = 0;
-			}
 
 		}
 		if (i == 4) { //oars
 			
 			translate(MODEL, -0.5f, 0.0f, 1.5f);
 			rotate(MODEL, -45, 0, 0, 1);
-			if (leftoar) {
-				rotate(MODEL, leftang, 1, 0, 0);
-				leftoar = 0;
+			if (rightoar == 1) {
+				rightang += 5.0f;
+				rotate(MODEL, rightang, 0.1, 0.5, 0);
+				if (rightang > 360.0f) {
+					rightang = 0.0f;
+					rightoar = 0;
+				}
 			}
 			scale(MODEL, 0.1f, 1.0f, 0.1f);
 			
@@ -442,19 +446,17 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 
 	case 'A': case 'a':
-		// Left paddle stroke rotates the boat slightly to the left
+		// right paddle stroke rotates the boat slightly to the left
 		boat.rotate(-5.0f); // Rotate by -5 degrees
 		boat.accelerate();
-		leftoar = 1;
-		leftang += 5.0f;
+		rightoar = 1;
 
 		break;
 	case 'D': case 'd':
-		// Right paddle stroke rotates the boat slightly to the right
+		// left paddle stroke rotates the boat slightly to the right
 		boat.rotate(5.0f); // Rotate by 5 degrees
 		boat.accelerate();
-		rightoar = 1;
-		rightang += 5.0f;
+		leftoar = 1;
 
 		break;
 	case 'S': case 's':
