@@ -92,8 +92,6 @@ float r = 10.0f;
 long myTime, timebase = 0, frame = 0;
 char s[32];
 float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
-float leftoarroation = 0.0f;
-float rightoarrotation = 0.0f;
 int leftoar = 0;
 int rightoar = 0;
 
@@ -299,20 +297,29 @@ static void renderBoat() {
 		}
 		if (i == 3) { //oars
 			translate(MODEL, 1.5f, 0.0f, 1.5f);
-			scale(MODEL, 0.1f, 1.5f, 0.1f);
+			rotate(MODEL, 45, 0, 0, 1);
+			if (leftoar) {
+				rotate(MODEL, 5, 1, 0, 1);
+				leftoar = 0;
+			}
+			scale(MODEL, 0.1f, 1.0f, 0.1f);
+			
 			if (rightoar) {
-				rotate(MODEL, rightoarrotation, 1, 0, 0);
+				rotate(MODEL, 5, 1, 0, 1);
 				rightoar = 0;
 			}
 
 		}
 		if (i == 4) { //oars
+			
 			translate(MODEL, -0.5f, 0.0f, 1.5f);
-			scale(MODEL, 0.1f, 1.5f, 0.1f);
+			rotate(MODEL, -45, 0, 0, 1);
 			if (leftoar) {
-				rotate(MODEL, leftoarroation, 1, 0, 0);
+				rotate(MODEL, 5, 1, 0, 0);
 				leftoar = 0;
 			}
+			scale(MODEL, 0.1f, 1.0f, 0.1f);
+			
 
 		}
 
@@ -436,8 +443,6 @@ void processKeys(unsigned char key, int xx, int yy)
 		// Left paddle stroke rotates the boat slightly to the left
 		boat.rotate(-5.0f); // Rotate by -5 degrees
 		boat.accelerate();
-		leftoarroation += 360.0f;
-		if (leftoarroation >= 360.0f) leftoarroation -= 360.0f;
 		leftoar = 1;
 
 		break;
@@ -445,8 +450,6 @@ void processKeys(unsigned char key, int xx, int yy)
 		// Right paddle stroke rotates the boat slightly to the right
 		boat.rotate(5.0f); // Rotate by 5 degrees
 		boat.accelerate();
-		rightoarrotation += 360.0f;
-		if (rightoarrotation >= 360.0f) rightoarrotation -= 360.0f;
 		rightoar = 1;
 		break;
 	case 'S': case 's':
