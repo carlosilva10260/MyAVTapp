@@ -94,6 +94,8 @@ char s[32];
 float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
 int leftoar = 0;
 int rightoar = 0;
+float leftang = 0.0f;
+float rightang = 0.0f;
 
 void timer(int value)
 {
@@ -299,13 +301,13 @@ static void renderBoat() {
 			translate(MODEL, 1.5f, 0.0f, 1.5f);
 			rotate(MODEL, 45, 0, 0, 1);
 			if (leftoar) {
-				rotate(MODEL, 5, 1, 0, 1);
+				leftang += 5.0f;
 				leftoar = 0;
 			}
 			scale(MODEL, 0.1f, 1.0f, 0.1f);
 			
 			if (rightoar) {
-				rotate(MODEL, 5, 1, 0, 1);
+				rotate(MODEL, rightang, 0,0,1);
 				rightoar = 0;
 			}
 
@@ -315,7 +317,7 @@ static void renderBoat() {
 			translate(MODEL, -0.5f, 0.0f, 1.5f);
 			rotate(MODEL, -45, 0, 0, 1);
 			if (leftoar) {
-				rotate(MODEL, 5, 1, 0, 0);
+				rotate(MODEL, leftang, 1, 0, 0);
 				leftoar = 0;
 			}
 			scale(MODEL, 0.1f, 1.0f, 0.1f);
@@ -444,6 +446,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		boat.rotate(-5.0f); // Rotate by -5 degrees
 		boat.accelerate();
 		leftoar = 1;
+		leftang += 5.0f;
 
 		break;
 	case 'D': case 'd':
@@ -451,6 +454,8 @@ void processKeys(unsigned char key, int xx, int yy)
 		boat.rotate(5.0f); // Rotate by 5 degrees
 		boat.accelerate();
 		rightoar = 1;
+		rightang += 5.0f;
+
 		break;
 	case 'S': case 's':
 		// Invert the paddle direction
