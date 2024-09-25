@@ -11,6 +11,29 @@ struct Materials {
 	int texCount;
 };
 
+struct PointLight {
+	vec4 position;
+};
+
+struct DirectionalLight {
+	vec3 direction;
+};
+
+struct SpotLight {
+	vec4 position;
+	float angle;
+	vec4 direction;
+};
+
+
+
+uniform sampler2D texmap0;
+uniform sampler2D texmap1;
+uniform sampler2D texmap2;
+uniform PointLight pointLights[2];
+uniform SpotLight spotLights[2];
+uniform DirectionalLight dirLight; 
+
 uniform Materials mat;
 
 in Data {

@@ -52,6 +52,14 @@ VSShaderLib shaderText;  //render bitmap text
 //File with the font
 const string font_name = "fonts/arial.ttf";
 
+// Lights
+
+float directionalLightPos[4]{ 1.0f, 1000.0f, 1.0f, 0.0f };
+float pointLightPos[2][4]{
+{-35.0f, 4.0f, -35.0f, 1.0f},
+{0.0f, 4.0f, 15.0f, 1.0f},
+};
+
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
 vector<struct MyMesh> boatMeshes;
@@ -75,7 +83,10 @@ GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
-GLint tex_loc, tex_loc1, tex_loc2;
+GLint spot_loc0, spot_loc1;
+GLint point_loc0, point_loc1;
+GLint tex_loc0, tex_loc1, tex_loc2;
+GLint dir_loc;
 
 // Camera Position
 int activeCamera = 0;
@@ -189,8 +200,11 @@ static void setupRender() {
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 	
 	float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
+	//multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
+	//glUniform4fv(lPos_uniformId, 1, res);
+
+	multMatrixPoint(VIEW, pointLightPos[0], res);
+	glUniform4fv(point_loc0, 1, res);
 }
 
 static void sendMaterial(const Material& mat) {
@@ -643,8 +657,8 @@ GLuint setupShaders() {
 
 	// Shader for models
 	shader.init();
-	shader.loadShader(VSShaderLib::VERTEX_SHADER, "shaders/pointlight_gourard.vert");
-	shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight_gourard.frag");
+	shader.loadShader(VSShaderLib::VERTEX_SHADER, "shaders/pointlight_phong.vert");
+	shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight_phong.frag");
 
 	// set semantics for the shader variables
 	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
@@ -664,8 +678,12 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
-	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
+	///lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	point_loc0 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
+	point_loc1 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
+	spot_loc0 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[0].position");
+	spot_loc1 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[1].position");
+	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 
