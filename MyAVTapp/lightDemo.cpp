@@ -208,16 +208,28 @@ static void sendMaterial(const Material& mat) {
 static void renderFloats() {
 	pushMatrix(MODEL);
 
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 12; ++i) {
 		// send the material
 		sendMaterial(floatMeshes[i].mat);
 		pushMatrix(MODEL);
 
 		if (i == 0 || i == 1) {
-			translate(MODEL, 10.0f, 0.2f, 10.0f);
+			translate(MODEL, 19.0f, 0.2f, 75.0f);
 		}
 		if (i == 2 || i == 3) {
-			translate(MODEL, 10.0f, 0.2f, 0.0f);
+			translate(MODEL, -49.0f, 0.2f, -49.0f);
+		}
+		if (i == 4 || i == 5) {
+			translate(MODEL, 50.0f, 0.2f, 0.0f);
+		}
+		if (i == 6 || i == 7) {
+			translate(MODEL, -20.0f, 0.2f, 18.0f);
+		}
+		if (i == 8 || i == 9) {
+			translate(MODEL, 10.0f, 0.2f, -55.0f);
+		}
+		if (i == 10 || i == 11) {
+			translate(MODEL, -72.0f, 0.2f, 72.0f);
 		}
 
 		// send matrices to OGL
@@ -241,21 +253,76 @@ static void renderFloats() {
 void renderTree(){
 	pushMatrix(MODEL);
 
-	for (int i = 0; i < 2; ++i) {
+	for (int i = 0; i < 16; ++i) {
 		// send the material
 		sendMaterial(treeMeshes[i].mat);
 		pushMatrix(MODEL);
 
 
-		if (i == 0) { //tree base
-			translate(MODEL, 50.0f, 10.0f, 50.0f);
+		if (i == 0) { //tree base big island 
+			translate(MODEL, 45.0f, 9.5f, 53.0f);
 			scale(MODEL, 0.5, 0.5, 0.5);
-			}
-		else if (i == 1) { //tree top
-			translate(MODEL, 50.0f, 11.0f, 50.0f);
+		}
+		if (i == 1) { //tree top big island
+			translate(MODEL,45.0f, 10.5f, 53.0f);
 			scale(MODEL, 0.5, 0.5, 0.5);
-			}
-
+		}
+		if (i == 2) { //tree base big island
+			translate(MODEL, 58.0f, 8.5f, 49.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 3) { //tree top big island
+			translate(MODEL, 58.0f, 9.5f, 49.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 4) { //tree base big island
+			translate(MODEL, 48.0f, 8.0f, 44.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 5) { //tree top big island
+			translate(MODEL, 48.0f, 9.0f, 44.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 6) { //tree base big island
+			translate(MODEL, 50.0f, 10.0f, 55.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 7) { //tree top big island
+			translate(MODEL, 50.0f, 10.0f, 55.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 8) { //tree base medium island #1
+			translate(MODEL, 63.0f, 7.0f, -47.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 9) { //tree top medium island #1
+			translate(MODEL, 63.0f, 8.0f, -47.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 10) { //tree base medium island #1
+			translate(MODEL, 60.0f, 9.0f, -42.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 11) { //tree top medium island #1
+			translate(MODEL, 60.0f, 10.0f, -42.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 12) { //tree base medium island #2
+			translate(MODEL, -48.0f, 8.0f, 1.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 13) { //tree top medium island #2
+			translate(MODEL, -48.0f, 9.0f, 1.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 14) { //tree base medium island #2
+			translate(MODEL, -53.0f, 7.0f, -3.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
+		if (i == 15) { //tree top medium island #2
+			translate(MODEL, -53.0f, 8.0f, -3.0f);
+			scale(MODEL, 0.5, 0.5, 0.5);
+		}
 
 
 		// send matrices to OGL
@@ -362,8 +429,7 @@ void renderScene(void) {
 	renderTree();
 	renderFloats();
 	
-
-	for (int j = 0; j < 2; ++j) {
+	for (int j = 0; j < 4; ++j) {
 		// send the material
 		sendMaterial(myMeshes[j].mat);
 		pushMatrix(MODEL);
@@ -374,6 +440,12 @@ void renderScene(void) {
 		else if (j == 1) { // big island
 			translate(MODEL, 50.0f, 0.0f, 50.0f);
 			scale(MODEL, 1.5, 1, 1);
+		}
+		else if (j == 2) { //medium island #1
+			translate(MODEL, 60.0f, 0.0f, -45.0f);
+		}
+		else if (j == 3) { //medium island #2
+			translate(MODEL, -50.0f, 0.0f, 0.0f);
 		}
 
 		// send matrices to OGL
@@ -403,19 +475,6 @@ void renderScene(void) {
 	int m_viewport[4];
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
 
-	//viewer at origin looking down at  negative z direction
-	//pushMatrix(MODEL);
-	//loadIdentity(MODEL);
-	//pushMatrix(PROJECTION);
-	//loadIdentity(PROJECTION);
-	//pushMatrix(VIEW);
-	//loadIdentity(VIEW);
-	//ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-	//RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-	//RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3f, 0.7f, 0.9f);
-	//popMatrix(PROJECTION);
-	//popMatrix(VIEW);
-	//popMatrix(MODEL);
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
@@ -453,14 +512,14 @@ void processKeys(unsigned char key, int xx, int yy)
 
 	case 'A': case 'a':
 		// right paddle stroke rotates the boat slightly to the left
-		boat.rotate(-5.0f); // Rotate by -5 degrees
+		boat.rotate(-2.0f); // Rotate by -5 degrees
 		boat.accelerate();
 		rightoar = 1;
 
 		break;
 	case 'D': case 'd':
 		// left paddle stroke rotates the boat slightly to the right
-		boat.rotate(5.0f); // Rotate by 5 degrees
+		boat.rotate(2.0f); // Rotate by 5 degrees
 		boat.accelerate();
 		leftoar = 1;
 
@@ -680,6 +739,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 
+	//Create Pawn Boat
 	float pawn_amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
 	float pawn_diff[] = { 0.8f, 0.6f, 0.4f, 1.0f };
 	float pawn_spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
@@ -693,6 +753,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	boatMeshes.push_back(amesh);
 
+	//Create Big Island
 	float grass_amb[] = { 0.0f, 0.3f, 0.0f, 1.0f };
 	float grass_diff[] = { 0.1f, 0.8f, 0.1f, 1.0f };
 	float grass_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
@@ -706,7 +767,22 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 
-	int numOfTrees = 1;
+	//Create Middle islands
+	for (int i = 0; i < 2; i++) {
+
+		amesh = createSphere(8.0f, 50);
+		memcpy(amesh.mat.ambient, grass_amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, grass_diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, grass_spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+
+	}
+
+	//Create Trees
+	int numOfTrees = 8;
 
 	for (int i = 0; i < numOfTrees; i++) {
 		amesh = createCylinder(4.0f, 1.0f, 50);
@@ -731,7 +807,7 @@ void init()
 
 	}
 
-
+	//Create Boat
 	amesh = createCube();
 	memcpy(amesh.mat.ambient, pawn_amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, pawn_diff, 4 * sizeof(float));
@@ -760,7 +836,8 @@ void init()
 	boatMeshes.push_back(amesh);
 	boatMeshes.push_back(amesh);
 
-	int numOfFloats = 2;
+	//Create Floats
+	int numOfFloats = 6;
 
 	float float_amb[] = { 0.3f, 0.0f, 0.0f, 1.0f };
 	float float_diff[] = { 0.8f, 0.1f, 0.1f, 1.0f };
@@ -788,8 +865,6 @@ void init()
 		floatMeshes.push_back(amesh);
 
 	}
-
-
 
 
 	// some GL settings
