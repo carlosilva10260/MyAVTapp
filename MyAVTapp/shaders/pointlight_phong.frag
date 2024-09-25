@@ -16,7 +16,7 @@ struct PointLight {
 };
 
 struct DirectionalLight {
-	vec3 direction;
+	vec4 direction;
 };
 
 struct SpotLight {
@@ -43,22 +43,40 @@ in Data {
 } DataIn;
 
 void main() {
+	vec4 result = vec4(0.0);
 
 	vec4 spec = vec4(0.0);
 
-	vec3 n = normalize(DataIn.normal);
-	vec3 l = normalize(DataIn.lightDir);
-	vec3 e = normalize(DataIn.eye);
 
+	// Directional Light
+	vec3 n = normalize(DataIn.normal);
+	vec3 e = normalize(DataIn.eye);
+	vec3 l = normalize(vec3(dirLight.direction));
 	float intensity = max(dot(n,l), 0.0);
+	
 
 	
 	if (intensity > 0.0) {
-
 		vec3 h = normalize(l + e);
 		float intSpec = max(dot(h,n), 0.0);
 		spec = mat.specular * pow(intSpec, mat.shininess);
 	}
+	result += intensity * mat.diffuse + spec;
+
+
+	// Point Lights
+	for (int i = 0; i < 2; i++) {
+		vec3 l = normalize(vec3(pointLights[i].position) - DataIn.lightDir);
+		float intensity = max(dot(n,l), 0.0);
+		if (intensity > 0.0) {
+			vec3 h = normalize(l + e);
+			float intSpec = max(dot(h,n), 0.0);
+			spec = mat.specular * pow(intSpec, mat.shininess);
+		}
+		result += intensity * mat.diffuse + spec;
+	}
 	
-	colorOut = max(intensity * mat.diffuse + spec, mat.ambient);
+
+
+	colorOut = max(result, mat.ambient);
 }

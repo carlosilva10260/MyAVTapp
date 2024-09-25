@@ -55,10 +55,13 @@ const string font_name = "fonts/arial.ttf";
 // Lights
 
 float directionalLightPos[4]{ 1.0f, 1000.0f, 1.0f, 0.0f };
+int directionalON = 1;
 float pointLightPos[2][4]{
-{-35.0f, 4.0f, -35.0f, 1.0f},
-{0.0f, 4.0f, 15.0f, 1.0f},
+{0.0f, 0.0f, 0.0f, 0.0f},
+{0.0f, 0.0f, 0.0f, 0.0f},
 };
+
+int pointON = 1;
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
@@ -200,11 +203,20 @@ static void setupRender() {
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 	
 	float res[4];
-	//multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	//glUniform4fv(lPos_uniformId, 1, res);
+	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
+	glUniform4fv(lPos_uniformId, 1, res);
+	
 
-	multMatrixPoint(VIEW, pointLightPos[0], res);
-	glUniform4fv(point_loc0, 1, res);
+	if (pointON == 1) {
+		multMatrixPoint(VIEW, pointLightPos[0], res);
+		glUniform4fv(point_loc0, 1, res);
+		multMatrixPoint(VIEW, pointLightPos[1], res);
+		glUniform4fv(point_loc1, 1, res);
+	}
+	if (directionalON == 1) {
+		multMatrixPoint(VIEW, directionalLightPos, res);
+		glUniform4fv(dir_loc, 1, res);
+	};
 }
 
 static void sendMaterial(const Material& mat) {
@@ -508,11 +520,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		glutLeaveMainLoop();
 		break;
 
-	case 'c':
-		printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
-		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
-	case 'n': glDisable(GL_MULTISAMPLE); break;
 
 	case '1':
 		activeCamera = 0;
@@ -545,6 +553,25 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'O': case 'o':
 		// Increase paddle strength
 		boat.addPaddleStrength(0.4f); // Increase by 0.1
+		break;
+
+	case 'N': case 'n':
+		//Toggle directional light
+		if (directionalON == 1) {
+			directionalON = 0;
+		}
+		else {
+			directionalON = 1;
+		}
+		break;
+	case 'C': case 'c':
+		//Toggle point lights
+		if (pointON == 1) {
+			pointON = 0;
+		}
+		else {
+			pointON = 1;
+		}
 		break;
 	}
 
@@ -678,9 +705,10 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	///lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	//lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
 	point_loc0 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
 	point_loc1 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
+	dir_loc = glGetUniformLocation(shader.getProgramIndex(), "dirLight.direction");
 	spot_loc0 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[0].position");
 	spot_loc1 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[1].position");
 	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
