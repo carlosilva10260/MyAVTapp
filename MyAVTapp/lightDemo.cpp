@@ -57,8 +57,8 @@ const string font_name = "fonts/arial.ttf";
 float directionalLightPos[4]{ 1.0f, 1000.0f, 1.0f, 0.0f };
 int directionalON = 1;
 float pointLightPos[2][4]{
-{0.0f, 0.0f, 0.0f, 0.0f},
-{0.0f, 0.0f, 0.0f, 0.0f},
+{-50.0f, 20.0f, -50.0f, 0.0f},
+{50.0f, 20.0f, 50.0f, 0.0f},
 };
 
 int pointON = 1;
@@ -707,7 +707,7 @@ GLuint setupShaders() {
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 	//lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
 	point_loc0 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
-	point_loc1 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
+	point_loc1 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[1].position");
 	dir_loc = glGetUniformLocation(shader.getProgramIndex(), "dirLight.direction");
 	spot_loc0 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[0].position");
 	spot_loc1 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[1].position");
