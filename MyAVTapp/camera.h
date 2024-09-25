@@ -5,11 +5,12 @@ class Camera
 {
 	std::array<float, 3> camPos;
 	std::array<float, 3> camTarget;
+	std::array<float, 3> camUp;
 
 	int type;
 
 public:
-	Camera(int type = 0) : type(type), camPos({ 0.0f, 0.0f, 0.0f }), camTarget({ 0.0f, 0.0f, 0.0f }) {}
+	Camera(int type = 0) : type(type), camPos({ 0.0f, 0.0f, 0.0f }), camTarget({ 0.0f, 0.0f, 0.0f }), camUp({0.0f, 1.0f, 0.0f}) {}
 
 	void setPos(const std::array<float, 3>& pos) {
 		camPos = pos;
@@ -33,6 +34,14 @@ public:
 
 	int getType(void) const {
 		return type;
+	}
+
+	void setUp(const std::array<float, 3>& up) {
+		camUp = up;
+	}
+
+	std::array<float, 3> getUp(void) const {
+		return camUp;
 	}
 };
 

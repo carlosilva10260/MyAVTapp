@@ -133,7 +133,7 @@ void changeSize(int w, int h) {
 	loadIdentity(PROJECTION);
 	const auto cameraType = cams[activeCamera].getType();
 	if (cameraType == 1) {
-		ortho(ratio * (-25), ratio * 25, -25, 25, 1.0f, 100.0f);
+		ortho(ratio * (-25), ratio * 25, -25, 25, 1.0f, 1000.0f);
 	}
 	else {
 		perspective(53.13f, ratio, 1.0f, 1000.0f);
@@ -154,25 +154,31 @@ static void setupRender() {
 	loadIdentity(MODEL);
 
 	if (activeCamera == 2) {
-		cams[activeCamera].setTarget({ boat.pos[0], boat.pos[1], boat.pos[2] });
-		cams[activeCamera].setPos({ boat.pos[0] - 4, boat.pos[1] + 12, boat.pos[2] - 4 });
+		cams[activeCamera].setTarget({ boat.pos[0] + 0.5f, boat.pos[1], boat.pos[2] });
+		cams[activeCamera].setPos({ boat.pos[0] + 0.5f, boat.pos[1] + 6, boat.pos[2] - 10 });
 	}
 
 	const auto cameraPos = cams[activeCamera].getPos();
 	const auto cameraTarget = cams[activeCamera].getTarget();
 	const auto cameraType = cams[activeCamera].getType();
+	const auto cameraUp = cams[activeCamera].getUp();
 	// set the camera using a function similar to gluLookAt
-	lookAt(cameraPos[0], cameraPos[1], cameraPos[2], cameraTarget[0], cameraTarget[1], cameraTarget[2], 0, 1, 0);
+	lookAt(cameraPos[0], cameraPos[1], cameraPos[2], cameraTarget[0], cameraTarget[1], cameraTarget[2], cameraUp[0], cameraUp[1], cameraUp[2]);
 
 	GLint m_view[4];
 	glGetIntegerv(GL_VIEWPORT, m_view);
 	float ratio = (m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
 	loadIdentity(PROJECTION);
 	if (cameraType == 1) {
-		ortho(ratio * (-25), ratio * 25, -25, 25, 1.0f, 100.0f);
+		ortho(ratio * (-100), ratio * 100, -100, 100, 1.0f, 1000.0f);
 	}
 	else {
-		perspective(53.13f, ratio, 1.0f, 100.0f);
+		if (activeCamera == 2) {
+			perspective(75.0f, ratio, 1.0f, 1000.0f);
+		}
+		else {
+			perspective(53.13f, ratio, 1.0f, 1000.0f);
+		}
 	}
 
 	// use our shader
@@ -647,12 +653,14 @@ void init()
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camY = r * sin(beta * 3.14f / 180.0f);*/
 
-	cams[0].setPos({ 4, 16, 4 });
-	cams[1].setPos({ 4, 8, 4 });
+	cams[0].setPos({ 0, 200, 0 });
+	cams[0].setUp({ 0, 0, 1 });
+
+	cams[1].setPos({ 0, 150, 0 });	
+	cams[1].setUp({ 0, 0, 1 });
 	cams[1].setType(1);
 
 	cams[2].setPos({ 4, 16, 4 });
-	cams[2].setTarget({});
 
 	float h20_amb[] = { 0.0f, 0.0f, 0.25f, 1.0f };
 	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 1.0f };
@@ -663,7 +671,7 @@ void init()
 
 
 	//Create Plane/Water
-	amesh = createQuad(500, 500);
+	amesh = createQuad(200, 200);
 	memcpy(amesh.mat.ambient, h20_amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, h20_diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, h20_spec, 4 * sizeof(float));
