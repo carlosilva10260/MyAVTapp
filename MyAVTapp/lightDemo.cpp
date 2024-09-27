@@ -36,6 +36,8 @@
 
 #include "camera.h"
 #include "boat.h"
+#include "waterCreatureManager.h"
+#include "aabb.h"
 
 using namespace std;
 
@@ -68,10 +70,13 @@ vector<struct MyMesh> myMeshes;
 vector<struct MyMesh> boatMeshes;
 vector<struct MyMesh> treeMeshes;
 vector<struct MyMesh> floatMeshes;
+vector<struct MyMesh> creatureMeshes;
 
 // Boat
-
 Boat boat;
+
+// Creatures
+WaterCreatureManager creatureManager;
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -124,7 +129,9 @@ void timer(int value)
 
 void refresh(int value)
 {
-	//PUT YOUR CODE HERE
+	boat.updateBoatMovement();
+	boat.updateBoatRotationAngle();
+	creatureManager.moveCreatures();
 	glutPostRedisplay();
 	glutTimerFunc(1000 / 60, refresh, 0);
 }
@@ -274,6 +281,35 @@ static void renderFloats() {
 		popMatrix(MODEL);
 	}
 	popMatrix(MODEL);
+}
+
+static void renderCreatures() {
+	for (int i = 0; i < 6; i++) {
+		sendMaterial(creatureMeshes[i].mat);
+		pushMatrix(MODEL);
+
+		auto creature = creatureManager.creatures[i];
+
+		std::pair<float, float>* rotateDirs = creature.getRotateAxis();
+
+		translate(MODEL, creature.pos[0], creature.pos[1], creature.pos[2]);
+		rotate(MODEL, 90, rotateDirs->second, 0.0f, rotateDirs->first);
+		rotate(MODEL, creature.spinAngle, 0.0f, 0.0, 1.0f);
+
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(creatureMeshes[i].vao);
+
+		glDrawElements(creatureMeshes[i].type, creatureMeshes[i].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+	}
 }
 
 void renderTree(){
@@ -446,16 +482,14 @@ static void renderBoat() {
 	popMatrix(MODEL);
 }
 
-void renderScene(void) {
-	boat.updateBoatMovement();
-	boat.updateBoatRotationAngle();
-
+static void renderScene(void) {	
 	setupRender();
 
 	renderTree();
 	renderFloats();
-	
-	for (int j = 0; j < 4; ++j) {
+	renderCreatures();
+
+	for (int j = 0; j < 2; ++j) {
 		// send the material
 		sendMaterial(myMeshes[j].mat);
 		pushMatrix(MODEL);
@@ -769,11 +803,10 @@ void init()
 
 	float h20_amb[] = { 0.0f, 0.0f, 0.25f, 1.0f };
 	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 1.0f };
-	float h20_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+	float h20_spec[] = { 0.1f, 0.1f, 0.3f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess = 100.0f;
+	float shininess = 300.0f;
 	int texcount = 0;
-
 
 	//Create Plane/Water
 	amesh = createQuad(200, 200);
@@ -912,6 +945,21 @@ void init()
 
 	}
 
+	float creature_amb[] = { 0.0f, 0.2f, 0.1f, 1.0f };    // A dark green ambient color
+	float creature_diff[] = { 0.1f, 0.6f, 0.3f, 1.0f };   // A medium green diffuse color
+	float creature_spec[] = { 0.4f, 0.8f, 0.4f, 1.0f };   // A bright green specular highlight
+	float creature_emissive[] = { 0.0f, 0.1f, 0.0f, 1.0f };   // A very faint green emissive glow
+
+	for (auto &creature : creatureManager.creatures) {
+		amesh = createCylinder(2.0f, 0.5f, 50);
+		memcpy(amesh.mat.ambient, creature_amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, creature_diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, creature_spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, creature_emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		creatureMeshes.push_back(amesh);
+	}
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);

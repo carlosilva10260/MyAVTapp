@@ -158,6 +158,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="aabb.cpp" />
     <ClCompile Include="avtFreeType.cpp" />
     <ClCompile Include="AVTmathLib.cpp" />
     <ClCompile Include="basic_geometry.cpp" />
@@ -165,8 +166,11 @@
     <ClCompile Include="lightDemo.cpp" />
     <ClCompile Include="Texture_Loader.cpp" />
     <ClCompile Include="vsShaderLib.cpp" />
+    <ClCompile Include="waterCreatureManager.cpp" />
+    <ClCompile Include="water_creature.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="aabb.h" />
     <ClInclude Include="avtFreeType.h" />
     <ClInclude Include="AVTmathLib.h" />
     <ClInclude Include="boat.h" />
@@ -176,6 +180,8 @@
     <ClInclude Include="Texture_Loader.h" />
     <ClInclude Include="VertexAttrDef.h" />
     <ClInclude Include="vsShaderLib.h" />
+    <ClInclude Include="waterCreatureManager.h" />
+    <ClInclude Include="water_creature.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies.exe" />
