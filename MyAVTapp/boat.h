@@ -68,14 +68,16 @@ public:
 		if (this->speed > 0.0f) {
 			this->speed -= this->decelerationRate * deltaTime;
 			if (this->speed < 0.0f) this->speed = 0.0f;
+			this->decelerationRate = this->speed / 2;
 		}
 		else if (this->speed < 0.0f) {
 			this->speed += this->decelerationRate * deltaTime;
 			if (this->speed > 0.0f) this->speed = 0.0f;
+			this->decelerationRate = - this->speed / 2;
 		}
 
 		// Limit maximum speed
-		float maxSpeed = 3.0f;
+		float maxSpeed = 20.0f;
 		if (this->speed > maxSpeed) this->speed = maxSpeed;
 		if (this->speed < -maxSpeed) this->speed = -maxSpeed;
 
@@ -101,12 +103,7 @@ public:
 	}
 
 	void addPaddleStrength(float paddleStrength) {
-		if (this->paddleStrength == 0.8f) {
-			this->paddleStrength += paddleStrength;
-		}
-		else {
-			this->paddleStrength = 0.8f;
-		}
+		this->paddleStrength += paddleStrength;
 	}
 };
 

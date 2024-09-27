@@ -56,7 +56,7 @@ const string font_name = "fonts/arial.ttf";
 
 // Lights
 
-float directionalLightPos[4]{ 1.0f, 1000.0f, 1.0f, 0.0f };
+float directionalLightPos[4]{ 500.0f, 500.0f, 1.0f, 0.0f };
 int directionalON = 1;
 float pointLightPos[2][4]{
 {-50.0f, 20.0f, -50.0f, 0.0f},
@@ -95,6 +95,9 @@ GLint spot_loc0, spot_loc1;
 GLint point_loc0, point_loc1;
 GLint tex_loc0, tex_loc1, tex_loc2;
 GLint dir_loc;
+
+
+GLint dir_toggle, point_toggle, spot_toggle;
 
 // Camera Position
 int activeCamera = 0;
@@ -213,17 +216,20 @@ static void setupRender() {
 	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
 	glUniform4fv(lPos_uniformId, 1, res);
 	
+	//point light
+	multMatrixPoint(VIEW, pointLightPos[0], res);
+	glUniform4fv(point_loc0, 1, res);
+	multMatrixPoint(VIEW, pointLightPos[1], res);
+	glUniform4fv(point_loc1, 1, res);
 
-	if (pointON == 1) {
-		multMatrixPoint(VIEW, pointLightPos[0], res);
-		glUniform4fv(point_loc0, 1, res);
-		multMatrixPoint(VIEW, pointLightPos[1], res);
-		glUniform4fv(point_loc1, 1, res);
-	}
-	if (directionalON == 1) {
-		multMatrixPoint(VIEW, directionalLightPos, res);
-		glUniform4fv(dir_loc, 1, res);
-	};
+	glUniform1i(point_toggle, pointON);
+
+
+	//directional light
+	multMatrixPoint(VIEW, directionalLightPos, res);
+	glUniform4fv(dir_loc, 1, res);
+
+	glUniform1i(dir_toggle, directionalON);
 }
 
 static void sendMaterial(const Material& mat) {
@@ -586,7 +592,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'O': case 'o':
 		// Increase paddle strength
-		boat.addPaddleStrength(0.4f); // Increase by 0.1
+		boat.addPaddleStrength(5.0f); // Increase by 5.0f
 		break;
 
 	case 'N': case 'n':
@@ -728,7 +734,6 @@ GLuint setupShaders() {
 	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
-	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
 
 	if (!shader.isProgramValid()) {
 		printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
@@ -748,6 +753,9 @@ GLuint setupShaders() {
 	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+
+	point_toggle = glGetUniformLocation(shader.getProgramIndex(), "pointON");
+	dir_toggle = glGetUniformLocation(shader.getProgramIndex(), "dirON");
 
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 

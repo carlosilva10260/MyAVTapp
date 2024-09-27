@@ -33,6 +33,9 @@ uniform sampler2D texmap2;
 uniform PointLight pointLights[2];
 uniform SpotLight spotLights[2];
 uniform DirectionalLight dirLight; 
+uniform int pointON;
+uniform int dirON;
+uniform int spotON;
 
 uniform Materials mat;
 
@@ -44,7 +47,6 @@ in Data {
 
 void main() {
 	vec4 result = vec4(0.0);
-
 	vec4 spec = vec4(0.0);
 
 
@@ -55,25 +57,27 @@ void main() {
 	float intensity = max(dot(n,l), 0.0);
 	
 
-	
-	if (intensity > 0.0) {
-		vec3 h = normalize(l + e);
-		float intSpec = max(dot(h,n), 0.0);
-		spec = mat.specular * pow(intSpec, mat.shininess);
-	}
-	result += intensity * mat.diffuse + spec;
-
-
-	// Point Lights
-	for (int i = 0; i < 2; i++) {
-		vec3 l = normalize(vec3(pointLights[i].position) - DataIn.lightDir);
-		float intensity = max(dot(n,l), 0.0);
+	 if (dirON == 1) {
 		if (intensity > 0.0) {
 			vec3 h = normalize(l + e);
 			float intSpec = max(dot(h,n), 0.0);
 			spec = mat.specular * pow(intSpec, mat.shininess);
 		}
-		result += intensity * mat.diffuse + spec;
+			result += intensity * mat.diffuse + spec;
+
+	}
+	// Point Lights
+	if ( pointON == 1){
+		for (int i = 0; i < 2; i++) {
+			l = normalize(vec3(pointLights[i].position) + DataIn.eye);
+			float intensity = max(dot(n,l), 0.0);
+			if (intensity > 0.0) {
+				vec3 h = normalize(l + e);
+				float intSpec = max(dot(h,n), 0.0);
+				spec = mat.specular * pow(intSpec, mat.shininess);
+			}
+			result += intensity * mat.diffuse + spec;
+		}
 	}
 	
 
