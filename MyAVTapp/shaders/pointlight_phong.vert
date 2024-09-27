@@ -16,7 +16,7 @@ out Data {
 } DataOut;
 
 void main () {
-
+	
 	vec4 pos = m_viewModel * position;
 
 	DataOut.normal = normalize(m_normal * normal.xyz);
