@@ -552,7 +552,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'O': case 'o':
 		// Increase paddle strength
-		boat.addPaddleStrength(0.4f); // Increase by 0.1
+		boat.addPaddleStrength(5.0f); // Increase by 5.0f
 		break;
 
 	case 'N': case 'n':
