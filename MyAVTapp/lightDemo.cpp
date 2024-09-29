@@ -31,7 +31,6 @@
 #include "VertexAttrDef.h"
 #include "AVTmathLib.h"
 #include "geometry.h"
-#include "Texture_Loader.h"
 
 #include "avtFreeType.h"
 
@@ -122,8 +121,6 @@ GLint dir_loc;
 
 
 GLint dir_toggle, point_toggle, spot_toggle;
-
-GLuint TextureArray[3];
 
 // Camera Position
 int activeCamera = 0;
@@ -234,21 +231,6 @@ static void setupRender() {
 	// use our shader
 
 	glUseProgram(shader.getProgramIndex());
-
-	//multitexturing
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
-
-	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
-	glUniform1i(tex_loc0, 0);
-	glUniform1i(tex_loc1, 1);
-	glUniform1i(tex_loc2, 2);
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -631,7 +613,6 @@ static void renderScene(void) {
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
-	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
 }
 
@@ -829,7 +810,7 @@ GLuint setupShaders() {
 	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
 	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
@@ -898,13 +879,6 @@ void init()
 		exit(0);
 	}
 	ilInit();
-
-	//Texture Object definition
-
-	glGenTextures(3, TextureArray);
-	Texture2D_Loader(TextureArray, "stone.tga", 0);
-	Texture2D_Loader(TextureArray, "checker.png", 1);
-	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
