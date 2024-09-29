@@ -54,16 +54,36 @@ VSShaderLib shaderText;  //render bitmap text
 //File with the font
 const string font_name = "fonts/arial.ttf";
 
+
+// Boat
+Boat boat;
+
 // Lights
 
-float directionalLightPos[4]{ 500.0f, 500.0f, 1.0f, 0.0f };
+float directionalLightPos[4]{ 200.0f, 200.0f, 1.0f, 0.0f };
 int directionalON = 1;
 float pointLightPos[2][4]{
-{-50.0f, 20.0f, -50.0f, 0.0f},
-{50.0f, 20.0f, 50.0f, 0.0f},
+{ 19.0f, 3.0f, 75.0f, 1.0f},
+{-49.0f, 3.0f, -49.0f, 1.0f},
 };
 
 int pointON = 1;
+
+
+//Spotlights
+
+float spotLightPos[2][4]{
+	{boat.pos[0], boat.pos[1]+1.5, boat.pos[2], 1.0},
+	{boat.pos[0], boat.pos[1]+1.0, boat.pos[2], 1.0},
+};
+
+float spotLightDir[2][4]{
+	{-boat.dir[0], -boat.dir[1], -boat.dir[2], 0.0f},
+	{-boat.dir[0], -boat.dir[1], -boat.dir[2], 0.0f},
+};
+float spotLightAngle[2]{ 10.0f, 10.0f };
+
+int spotON = 1;
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
@@ -72,8 +92,7 @@ vector<struct MyMesh> treeMeshes;
 vector<struct MyMesh> floatMeshes;
 vector<struct MyMesh> creatureMeshes;
 
-// Boat
-Boat boat;
+
 
 // Creatures
 WaterCreatureManager creatureManager;
@@ -91,7 +110,7 @@ GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
-GLint spot_loc0, spot_loc1;
+GLint spot_pos_loc0, spot_pos_loc1, spot_dir_loc0, spot_dir_loc1, spot_angle_loc0, spot_angle_loc1;
 GLint point_loc0, point_loc1;
 GLint tex_loc0, tex_loc1, tex_loc2;
 GLint dir_loc;
@@ -230,6 +249,25 @@ static void setupRender() {
 	glUniform4fv(dir_loc, 1, res);
 
 	glUniform1i(dir_toggle, directionalON);
+
+
+
+
+	//spotlights
+	multMatrixPoint(VIEW, spotLightPos[0], res);
+	glUniform4fv(spot_pos_loc0, 1, res);
+	multMatrixPoint(VIEW, spotLightPos[1], res);
+	glUniform4fv(spot_pos_loc1, 1, res);
+
+	multMatrixPoint(VIEW, spotLightDir[0], res);
+	glUniform4fv(spot_dir_loc0, 1, res);
+	multMatrixPoint(VIEW, spotLightDir[1], res);
+	glUniform4fv(spot_dir_loc1, 1, res);
+
+	glUniform1f(spot_angle_loc0, spotLightAngle[0]);
+	glUniform1f(spot_angle_loc1, spotLightAngle[1]);
+
+	glUniform1i(spot_toggle, spotON);
 }
 
 static void sendMaterial(const Material& mat) {
@@ -418,6 +456,24 @@ static void renderBoat() {
 
 	translate(MODEL, boat.pos[0], boat.pos[1], boat.pos[2]);
 	rotate(MODEL, boat.angle, 0, 1.0f, 0);
+
+
+	for (int i = 0; i < 2; i++) {
+		spotLightPos[i][0] = boat.pos[0];
+		if (i == 1) {
+			spotLightPos[i][1] = boat.pos[1] + 1.0;
+		}
+		else {
+			spotLightPos[i][1] = boat.pos[1] + 1.5;
+		}
+		spotLightPos[i][2] = boat.pos[2];
+		spotLightDir[i][0] = -boat.dir[0];
+		spotLightDir[i][1] = -boat.dir[1];
+		spotLightDir[i][2] = -boat.dir[2];
+	}
+
+
+	
 	
 	for (int i = 0; i < 5; ++i) {
 		// send the material
@@ -533,6 +589,7 @@ static void renderScene(void) {
 	renderBoat();
 
 
+
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
@@ -613,6 +670,16 @@ void processKeys(unsigned char key, int xx, int yy)
 			pointON = 1;
 		}
 		break;
+	case 'H': case 'h':
+		//Toggle spot lights
+		if (spotON == 1) {
+			spotON = 0;
+		}
+		else {
+			spotON = 1;
+		}
+		break;
+
 	}
 
 }
@@ -734,9 +801,9 @@ GLuint setupShaders() {
 	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
+	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
 
 	if (!shader.isProgramValid()) {
-		printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
 		printf("GLSL Model Program Not Valid!\n");
 		exit(1);
 	}
@@ -748,14 +815,19 @@ GLuint setupShaders() {
 	point_loc0 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
 	point_loc1 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[1].position");
 	dir_loc = glGetUniformLocation(shader.getProgramIndex(), "dirLight.direction");
-	spot_loc0 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[0].position");
-	spot_loc1 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[1].position");
+	spot_pos_loc0 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[0].position");
+	spot_pos_loc1 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[1].position");
+	spot_dir_loc0 = glGetUniformLocation(shader.getProgramIndex(), "spotLights[0].direction");
+	spot_dir_loc1 = glGetUniformLocation(shader.getProgramIndex(), "spotLights[1].direction");
+	spot_angle_loc0 = glGetUniformLocation(shader.getProgramIndex(), "spotLights[0].angle");
+	spot_angle_loc1 = glGetUniformLocation(shader.getProgramIndex(), "spotLights[1].angle");
 	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 
 	point_toggle = glGetUniformLocation(shader.getProgramIndex(), "pointON");
 	dir_toggle = glGetUniformLocation(shader.getProgramIndex(), "dirON");
+	spot_toggle = glGetUniformLocation(shader.getProgramIndex(), "spotON");
 
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 
@@ -811,9 +883,9 @@ void init()
 
 	float h20_amb[] = { 0.0f, 0.0f, 0.25f, 1.0f };
 	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 1.0f };
-	float h20_spec[] = { 0.1f, 0.1f, 0.3f, 1.0f };
+	float h20_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess = 300.0f;
+	float shininess = 9999.0f;
 	int texcount = 0;
 
 	//Create Plane/Water
