@@ -62,9 +62,13 @@ Boat boat;
 
 float directionalLightPos[4]{ 200.0f, 200.0f, 1.0f, 0.0f };
 int directionalON = 1;
-float pointLightPos[2][4]{
+float pointLightPos[6][4]{
 { 19.0f, 3.0f, 75.0f, 1.0f},
 {-49.0f, 3.0f, -49.0f, 1.0f},
+{ 50.0f, 3.0f, 0.0f, 1.0f},
+{-20.0f, 3.0f, 18.0f, 1.0f},
+{10.0f, 3.0f, -55.0f, 1.0f},
+{-72.0f, 3.0f, 72.0f, 1.0f},
 };
 
 int pointON = 1;
@@ -111,7 +115,7 @@ GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint spot_pos_loc0, spot_pos_loc1, spot_dir_loc0, spot_dir_loc1, spot_angle_loc0, spot_angle_loc1;
-GLint point_loc0, point_loc1;
+GLint point_loc0, point_loc1, point_loc2, point_loc3, point_loc4, point_loc5;
 GLint tex_loc0, tex_loc1, tex_loc2;
 GLint dir_loc;
 
@@ -240,6 +244,14 @@ static void setupRender() {
 	glUniform4fv(point_loc0, 1, res);
 	multMatrixPoint(VIEW, pointLightPos[1], res);
 	glUniform4fv(point_loc1, 1, res);
+	multMatrixPoint(VIEW, pointLightPos[2], res);
+	glUniform4fv(point_loc2, 1, res);
+	multMatrixPoint(VIEW, pointLightPos[3], res);
+	glUniform4fv(point_loc3, 1, res);
+	multMatrixPoint(VIEW, pointLightPos[4], res);
+	glUniform4fv(point_loc4, 1, res);
+	multMatrixPoint(VIEW, pointLightPos[5], res);
+	glUniform4fv(point_loc5, 1, res);
 
 	glUniform1i(point_toggle, pointON);
 
@@ -551,7 +563,7 @@ static void renderScene(void) {
 	renderFloats();
 	renderCreatures();
 
-	for (int j = 0; j < 2; ++j) {
+	for (int j = 0; j < 4; ++j) {
 		// send the material
 		sendMaterial(myMeshes[j].mat);
 		pushMatrix(MODEL);
@@ -814,6 +826,10 @@ GLuint setupShaders() {
 	//lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
 	point_loc0 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
 	point_loc1 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[1].position");
+	point_loc2 = glGetUniformLocation(shader.getProgramIndex(), "pointLights[2].position");
+	point_loc3 = glGetUniformLocation(shader.getProgramIndex(), "pointLights[3].position");
+	point_loc4 = glGetUniformLocation(shader.getProgramIndex(), "pointLights[4].position");
+	point_loc5 = glGetUniformLocation(shader.getProgramIndex(), "pointLights[5].position");
 	dir_loc = glGetUniformLocation(shader.getProgramIndex(), "dirLight.direction");
 	spot_pos_loc0 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[0].position");
 	spot_pos_loc1 = glGetUniformLocation(shader.getProgramIndex(),"spotLights[1].position");
