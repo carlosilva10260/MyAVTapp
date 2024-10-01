@@ -153,11 +153,26 @@ void timer(int value)
 	glutTimerFunc(1000, timer, 0);
 }
 
+bool isBoatColliding() {
+	for (auto& creature : creatureManager.creatures) {
+		if (AABB::isColliding(creature.getCreatureAABB(), boat.getBoatAABB())) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void refresh(int value)
 {
 	boat.updateBoatMovement();
 	boat.updateBoatRotationAngle();
-	creatureManager.moveCreatures();
+	// creatureManager.moveCreatures();
+	if (isBoatColliding()) {
+		printf("COLLISION WITH CREATURE DETECTED!!!\n");
+		boat.resetBoatPosition();
+	}
+
 	glutPostRedisplay();
 	glutTimerFunc(1000 / 60, refresh, 0);
 }
@@ -471,7 +486,7 @@ static void renderBoat() {
 
 
 	for (int i = 0; i < 2; i++) {
-		spotLightPos[i][0] = boat.pos[0];
+		spotLightPos[i][0] = boat.pos[0] + 0.5;
 		if (i == 1) {
 			spotLightPos[i][1] = boat.pos[1] + 1.0;
 		}

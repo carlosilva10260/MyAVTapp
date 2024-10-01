@@ -96,6 +96,21 @@ public:
 		this->paddleStrength += paddleStrength;
 	}
 
+	void resetBoatPosition() {
+		this->pos[0] = 0.0f;
+		this->pos[1] = 0.0f;
+		this->pos[2] = 0.0f;
+
+		this->dir[0] = 0.0f;
+		this->dir[1] = 0.0f;
+		this->dir[2] = 1.0f;
+
+		this->speed = 0.0f;
+		this->angle = 0.0f;
+		this->acceleration = 0.0f;
+		this->paddleStrength = 0.8f;
+	}
+
 	AABB getBoatAABB() {
 		// Base boat dimensions (scaled base mesh)
 		float baseHalfWidth = 1.0f * 0.5f;   // Half of the width (scaled by 1.0 in x)
