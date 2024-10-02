@@ -57,6 +57,8 @@ const string font_name = "fonts/arial.ttf";
 
 // Boat
 Boat boat;
+int aKey = 0;
+int dKey = 0;
 
 // Lights
 
@@ -636,6 +638,17 @@ static void renderScene(void) {
 // Events from the Keyboard
 //
 
+void onKeyUp(unsigned char key, int xx, int yy) {
+	switch (key) {
+	case 'A': case 'a':
+		aKey = 0;
+		break;
+	case 'D': case 'd':
+		dKey = 0;
+		break;
+	}
+}
+
 void processKeys(unsigned char key, int xx, int yy)
 {
 	switch (key) {
@@ -658,14 +671,22 @@ void processKeys(unsigned char key, int xx, int yy)
 
 	case 'A': case 'a':
 		// right paddle stroke rotates the boat slightly to the left
-		boat.rotate(-2.0f); // Rotate by -5 degrees
+		aKey = 1;
+		if (dKey == 0) {
+			boat.rotate(-2.0f); // Rotate by -2 degrees
+		}
+		
 		boat.accelerate();
 		rightoar = 1;
 
 		break;
 	case 'D': case 'd':
 		// left paddle stroke rotates the boat slightly to the right
-		boat.rotate(2.0f); // Rotate by 5 degrees
+		dKey = 1;
+		if (aKey == 0) {
+			boat.rotate(2.0f); // Rotate by 2 degrees
+		}
+
 		boat.accelerate();
 		leftoar = 1;
 
@@ -1111,6 +1132,7 @@ int main(int argc, char** argv) {
 
 	//	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
+	glutKeyboardUpFunc(onKeyUp);
 	glutMouseFunc(processMouseButtons);
 	glutMotionFunc(processMouseMotion);
 	glutMouseWheelFunc(mouseWheel);
