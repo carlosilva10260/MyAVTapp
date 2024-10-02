@@ -7,6 +7,12 @@ public:
 	std::array<float, 3> min;
 	std::array<float, 3> max;
 
+    AABB() : min({ 0.0f, 0.0f, 0.0f }), max({ 0.0f, 0.0f, 0.0f }) {}
+
+    AABB(std::array<float, 3> &min, std::array<float, 3> &max) : min(min), max(max) {}
+    AABB(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) : 
+        min({ minX, minY, minZ }), max({ maxX, maxY, maxZ }) {}
+
     static bool isColliding(AABB& box1, AABB& box2) {
         // Check for overlap along each axis
         bool overlapX = box1.max[0] >= box2.min[0] && box1.min[0] <= box2.max[0];

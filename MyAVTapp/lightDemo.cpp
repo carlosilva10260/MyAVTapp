@@ -39,6 +39,7 @@
 #include "boat.h"
 #include "waterCreatureManager.h"
 #include "aabb.h"
+#include <BoundingSphere.h>
 
 using namespace std;
 
@@ -95,9 +96,11 @@ int spotON = 1;
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
+array<BoundingSphere, 3> islandBoundingSpheres;
 vector<struct MyMesh> boatMeshes;
 vector<struct MyMesh> treeMeshes;
 vector<struct MyMesh> floatMeshes;
+array<AABB, 6> floatAABBs;
 vector<struct MyMesh> creatureMeshes;
 
 
@@ -148,6 +151,8 @@ int rightoar = 0;
 float leftang = 0.0f;
 float rightang = 0.0f;
 
+enum CollisionType { NONE, CREATURE, RED_FLOAT, ISLAND };
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -159,14 +164,26 @@ void timer(int value)
 	glutTimerFunc(1000, timer, 0);
 }
 
-bool isBoatColliding() {
+CollisionType isBoatColliding() {
 	for (auto& creature : creatureManager.creatures) {
 		if (AABB::isColliding(creature.getCreatureAABB(), boat.getBoatAABB())) {
-			return true;
+			return CREATURE;
 		}
 	}
 
-	return false;
+	for (int i = 0; i < 3; i++) {
+		if (BoundingSphere::isColliding(islandBoundingSpheres[i], boat.getBoatAABB())) {
+			return ISLAND;
+		}
+	}
+
+	for (int i = 0; i < 6; i++) {
+		if (AABB::isColliding(floatAABBs[i], boat.getBoatAABB())) {
+			return RED_FLOAT;
+		}
+	}
+
+	return NONE;
 }
 
 void refresh(int value)
@@ -174,9 +191,18 @@ void refresh(int value)
 	boat.updateBoatMovement();
 	boat.updateBoatRotationAngle();
 	creatureManager.moveCreatures();
-	if (isBoatColliding()) {
+	CollisionType collisionType = isBoatColliding();
+	if (collisionType == CREATURE) {
 		printf("COLLISION WITH CREATURE DETECTED!!!\n");
 		boat.resetBoatPosition();
+	}
+	else if (collisionType == ISLAND) {
+		printf("COLLISION WITH ISLAND DETECTED!!!\n");
+		boat.stop();
+	}
+	else if (collisionType == RED_FLOAT) {
+		printf("COLLISION WITH ISLAND DETECTED!!!\n");
+		boat.stop();
 	}
 
 	glutPostRedisplay();
@@ -337,23 +363,36 @@ static void renderFloats() {
 		sendMaterial(floatMeshes[i].mat);
 		pushMatrix(MODEL);
 
+		// 1.0f radius
 		if (i == 0 || i == 1) {
 			translate(MODEL, 19.0f, 0.2f, 75.0f);
+			floatAABBs[0] = AABB(19.0f - 1.0f, 0.0f, 75.0f - 1.0f,
+				19.0f + 1.0f, 0.0f, 75.0f + 1.0f);
 		}
 		if (i == 2 || i == 3) {
 			translate(MODEL, -49.0f, 0.2f, -49.0f);
+			floatAABBs[1] = AABB(-49.0f - 1.0f, 0.0f, -49.0f - 1.0f,
+				-49.0f + 1.0f, 0.0f, -49.0f + 1.0f);
 		}
 		if (i == 4 || i == 5) {
 			translate(MODEL, 50.0f, 0.2f, 0.0f);
+			floatAABBs[2] = AABB(50.0f - 1.0f, 0.0f, 0.0f - 1.0f,
+				50.0f + 1.0f, 0.0f, 0.0f + 1.0f);
 		}
 		if (i == 6 || i == 7) {
 			translate(MODEL, -20.0f, 0.2f, 18.0f);
+			floatAABBs[3] = AABB(-20.0f - 1.0f, 0.0f, 18.0f - 1.0f,
+				-20.0f + 1.0f, 0.0f, 18.0f + 1.0f);
 		}
 		if (i == 8 || i == 9) {
 			translate(MODEL, 10.0f, 0.2f, -55.0f);
+			floatAABBs[4] = AABB(10.0f - 1.0f, 0.0f, -55.0f - 1.0f,
+				10.0f + 1.0f, 0.0f, -55.0f + 1.0f);
 		}
 		if (i == 10 || i == 11) {
 			translate(MODEL, -72.0f, 0.2f, 72.0f);
+			floatAABBs[5] = AABB(-72.0f - 1.0f, 0.0f, 72.0f - 1.0f,
+				-72.0f + 1.0f, 0.0f, 72.0f + 1.0f);
 		}
 
 		// send matrices to OGL
@@ -617,14 +656,17 @@ static void renderScene(void) {
 		}
 		else if (j == 1) { // big island
 			translate(MODEL, 50.0f, 0.0f, 50.0f);
-			scale(MODEL, 1.5, 1, 1);
+			scale(MODEL, 1.5, 1, 1.5);
 			glUniform1i(texMode_uniformId, 0);
+			islandBoundingSpheres[0] = BoundingSphere(50.0f, 0.0f, 50.0f, 15.0f);
 		}
 		else if (j == 2) { //medium island #1
 			translate(MODEL, 60.0f, 0.0f, -45.0f);
+			islandBoundingSpheres[1] = BoundingSphere(60.0f, 0.0f, -45.0f, 8.0f);
 		}
 		else if (j == 3) { //medium island #2
 			translate(MODEL, -50.0f, 0.0f, 0.0f);
+			islandBoundingSpheres[2] = BoundingSphere(-50.0f, 0.0f, 0.0f, 8.0f);
 		}
 
 		// send matrices to OGL

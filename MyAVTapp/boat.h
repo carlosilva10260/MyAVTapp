@@ -96,6 +96,16 @@ public:
 		this->paddleStrength += paddleStrength;
 	}
 
+	void stop() {
+		// Simulates a crash with rebounding
+		this->pos[0] -= this->dir[0] * (this->speed / 5.0f);
+		this->pos[2] -= this->dir[2] * (this->speed / 5.0f);
+
+		this->speed = 0.0f;
+		this->acceleration = 0.0f;
+		this->paddleStrength = 0.8f;
+	}
+
 	void resetBoatPosition() {
 		this->pos[0] = 0.0f;
 		this->pos[1] = 0.0f;
@@ -115,7 +125,7 @@ public:
 		// Base boat dimensions (scaled base mesh)
 		float baseHalfWidth = 1.0f * 0.5f;   // Half of the width (scaled by 1.0 in x)
 		float baseHalfHeight = 0.5f * 0.5f;  // Half of the height (scaled by 0.5 in y)
-		float baseHalfDepth = 3.0f * 0.5f;   // Half of the depth (scaled by 3.0 in z)
+		float baseHalfDepth = 4.0f * 0.5f;   // Half of the depth (scaled by 3.0 in z)
 
 		// Rotate the dimensions (we need the largest possible extents after rotation)
 		// Use the boat's angle to adjust the AABB
