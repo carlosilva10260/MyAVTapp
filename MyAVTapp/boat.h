@@ -2,7 +2,6 @@
 #include <array>
 #include <iostream>
 #include "math.h"
-#include "aabb.h"
 #include <GL/freeglut.h>
 class Boat
 {
@@ -85,6 +84,17 @@ public:
 		// Update position based on speed and direction
 		this->pos[0] += this->dir[0] * this->speed * deltaTime;
 		this->pos[2] += this->dir[2] * this->speed * deltaTime;
+
+		/*std::cout << deltaTime << std::endl;
+		std::cout << this->acceleration << std::endl;
+		std::cout << this->speed << std::endl;
+		std::cout << std::endl;
+		std::cout << this->dir[0] << std::endl;
+		std::cout << this->dir[2] << std::endl;
+		std::cout << this->pos[0] << std::endl;
+		std::cout << this->pos[2] << std::endl;
+		std::cout << std::endl;
+		std::cout << std::endl;*/
 	}
 
 	void updateBoatRotationAngle() {
@@ -94,50 +104,6 @@ public:
 
 	void addPaddleStrength(float paddleStrength) {
 		this->paddleStrength += paddleStrength;
-	}
-
-	void resetBoatPosition() {
-		this->pos[0] = 0.0f;
-		this->pos[1] = 0.0f;
-		this->pos[2] = 0.0f;
-
-		this->dir[0] = 0.0f;
-		this->dir[1] = 0.0f;
-		this->dir[2] = 1.0f;
-
-		this->speed = 0.0f;
-		this->angle = 0.0f;
-		this->acceleration = 0.0f;
-		this->paddleStrength = 0.8f;
-	}
-
-	AABB getBoatAABB() {
-		// Base boat dimensions (scaled base mesh)
-		float baseHalfWidth = 1.0f * 0.5f;   // Half of the width (scaled by 1.0 in x)
-		float baseHalfHeight = 0.5f * 0.5f;  // Half of the height (scaled by 0.5 in y)
-		float baseHalfDepth = 3.0f * 0.5f;   // Half of the depth (scaled by 3.0 in z)
-
-		// Rotate the dimensions (we need the largest possible extents after rotation)
-		// Use the boat's angle to adjust the AABB
-		float sinAngle = sin(this->angle * (3.14159265f / 180.0f));
-		float cosAngle = cos(this->angle * (3.14159265f / 180.0f));
-
-		// Rotate the width and depth to find the new extents
-		float rotatedHalfWidth = abs(baseHalfWidth * cosAngle) + abs(baseHalfDepth * sinAngle);
-		float rotatedHalfDepth = abs(baseHalfWidth * sinAngle) + abs(baseHalfDepth * cosAngle);
-
-		AABB box;
-
-		// Add boat position and rotated extents
-		box.min[0] = this->pos[0] - rotatedHalfWidth;
-		box.min[1] = this->pos[1] - baseHalfHeight;  // Height remains the same (no rotation around y-axis)
-		box.min[2] = this->pos[2] - rotatedHalfDepth;
-
-		box.max[0] = this->pos[0] + rotatedHalfWidth;
-		box.max[1] = this->pos[1] + baseHalfHeight;
-		box.max[2] = this->pos[2] + rotatedHalfDepth;
-
-		return box;
 	}
 };
 

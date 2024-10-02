@@ -31,6 +31,7 @@
 #include "VertexAttrDef.h"
 #include "AVTmathLib.h"
 #include "geometry.h"
+#include "Texture_Loader.h"
 
 #include "avtFreeType.h"
 
@@ -57,9 +58,6 @@ const string font_name = "fonts/arial.ttf";
 
 // Boat
 Boat boat;
-int aKey = 0;
-int dKey = 0;
-int sKey = 0;
 
 // Lights
 
@@ -125,6 +123,8 @@ GLint dir_loc;
 
 GLint dir_toggle, point_toggle, spot_toggle;
 
+GLuint TextureArray[3];
+
 // Camera Position
 int activeCamera = 0;
 Camera cams[3];
@@ -156,26 +156,11 @@ void timer(int value)
 	glutTimerFunc(1000, timer, 0);
 }
 
-bool isBoatColliding() {
-	for (auto& creature : creatureManager.creatures) {
-		if (AABB::isColliding(creature.getCreatureAABB(), boat.getBoatAABB())) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
 void refresh(int value)
 {
 	boat.updateBoatMovement();
 	boat.updateBoatRotationAngle();
 	creatureManager.moveCreatures();
-	if (isBoatColliding()) {
-		printf("COLLISION WITH CREATURE DETECTED!!!\n");
-		boat.resetBoatPosition();
-	}
-
 	glutPostRedisplay();
 	glutTimerFunc(1000 / 60, refresh, 0);
 }
@@ -249,6 +234,21 @@ static void setupRender() {
 	// use our shader
 
 	glUseProgram(shader.getProgramIndex());
+
+	//multitexturing
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+	glUniform1i(tex_loc0, 0);
+	glUniform1i(tex_loc1, 1);
+	glUniform1i(tex_loc2, 2);
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -489,7 +489,7 @@ static void renderBoat() {
 
 
 	for (int i = 0; i < 2; i++) {
-		spotLightPos[i][0] = boat.pos[0] + 0.5;
+		spotLightPos[i][0] = boat.pos[0];
 		if (i == 1) {
 			spotLightPos[i][1] = boat.pos[1] + 1.0;
 		}
@@ -530,14 +530,10 @@ static void renderBoat() {
 			
 			if (leftoar == 1) {
 				leftang += 5.0f;
-				if (sKey == 1) {
-					rotate(MODEL, leftang, 0.1, 0.5, 0);
-				}
-				else {
-					rotate(MODEL, leftang, -0.1, -0.5, 0);
-				}
+				rotate(MODEL, leftang, -0.1 , -0.5, 0);
 				if (leftang > 360.0f) {
 					leftang = 0.0f;
+					leftoar = 0;
 				}
 			}
 			scale(MODEL, 0.1f, 1.0f, 0.1f);
@@ -549,14 +545,10 @@ static void renderBoat() {
 			rotate(MODEL, -45, 0, 0, 1);
 			if (rightoar == 1) {
 				rightang += 5.0f;
-				if (sKey == 1) {
-					rotate(MODEL, rightang, -0.1, -0.5, 0);
-				}
-				else {
-					rotate(MODEL, rightang, 0.1, 0.5, 0);
-				}
+				rotate(MODEL, rightang, 0.1, 0.5, 0);
 				if (rightang > 360.0f) {
 					rightang = 0.0f;
+					rightoar = 0;
 				}
 			}
 			scale(MODEL, 0.1f, 1.0f, 0.1f);
@@ -639,6 +631,7 @@ static void renderScene(void) {
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
 }
 
@@ -646,19 +639,6 @@ static void renderScene(void) {
 //
 // Events from the Keyboard
 //
-
-void onKeyUp(unsigned char key, int xx, int yy) {
-	switch (key) {
-	case 'A': case 'a':
-		aKey = 0;
-		rightoar = 0;
-		break;
-	case 'D': case 'd':
-		dKey = 0;
-		leftoar = 0;
-		break;
-	}
-}
 
 void processKeys(unsigned char key, int xx, int yy)
 {
@@ -682,33 +662,21 @@ void processKeys(unsigned char key, int xx, int yy)
 
 	case 'A': case 'a':
 		// right paddle stroke rotates the boat slightly to the left
-		aKey = 1;
-		if (dKey == 0) {
-			boat.rotate(-2.0f); // Rotate by -2 degrees
-		}
-		
+		boat.rotate(-2.0f); // Rotate by -5 degrees
 		boat.accelerate();
 		rightoar = 1;
+
 		break;
 	case 'D': case 'd':
 		// left paddle stroke rotates the boat slightly to the right
-		dKey = 1;
-		if (aKey == 0) {
-			boat.rotate(2.0f); // Rotate by 2 degrees
-		}
-
+		boat.rotate(2.0f); // Rotate by 5 degrees
 		boat.accelerate();
 		leftoar = 1;
+
 		break;
 	case 'S': case 's':
 		// Invert the paddle direction
 		boat.directionModifier *= -1;
-		if (sKey == 0) {
-			sKey = 1;
-		}
-		else {
-			sKey = 0;
-		}
 		break;
 	case 'O': case 'o':
 		// Increase paddle strength
@@ -861,7 +829,7 @@ GLuint setupShaders() {
 	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
 	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
@@ -931,6 +899,13 @@ void init()
 		exit(0);
 	}
 	ilInit();
+
+	//Texture Object definition
+
+	glGenTextures(3, TextureArray);
+	Texture2D_Loader(TextureArray, "stone.tga", 0);
+	Texture2D_Loader(TextureArray, "checker.png", 1);
+	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
@@ -1148,7 +1123,6 @@ int main(int argc, char** argv) {
 
 	//	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
-	glutKeyboardUpFunc(onKeyUp);
 	glutMouseFunc(processMouseButtons);
 	glutMotionFunc(processMouseMotion);
 	glutMouseWheelFunc(mouseWheel);
