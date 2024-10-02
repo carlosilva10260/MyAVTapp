@@ -103,7 +103,7 @@ vector<struct MyMesh> floatMeshes;
 array<AABB, 6> floatAABBs;
 vector<struct MyMesh> creatureMeshes;
 
-
+int fogON = 0;
 
 // Creatures
 WaterCreatureManager creatureManager;
@@ -127,7 +127,7 @@ GLint tex_loc0, tex_loc1, tex_loc2;
 GLint dir_loc;
 GLint texMode_uniformId;
 
-GLint dir_toggle, point_toggle, spot_toggle;
+GLint dir_toggle, point_toggle, spot_toggle, fog_toggle;
 
 GLuint TextureArray[3];
 
@@ -341,6 +341,9 @@ static void setupRender() {
 	glUniform1f(spot_angle_loc1, spotLightAngle[1]);
 
 	glUniform1i(spot_toggle, spotON);
+
+	//pass the toggle for fog
+	glUniform1i(fog_toggle, fogON);
 }
 
 static void sendMaterial(const Material& mat) {
@@ -748,7 +751,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		if (dKey == 0) {
 			boat.rotate(-2.0f); // Rotate by -2 degrees
 		}
-		
+
 		boat.accelerate();
 		rightoar = 1;
 		break;
@@ -804,9 +807,16 @@ void processKeys(unsigned char key, int xx, int yy)
 			spotON = 1;
 		}
 		break;
-
+	case 'F': case 'f':
+		//Toggle fog effect
+		if (fogON == 1) {
+			fogON = 0;
+		}
+		else {
+			fogON = 1;
+		}
+		break;
 	}
-
 }
 
 
@@ -959,6 +969,7 @@ GLuint setupShaders() {
 	point_toggle = glGetUniformLocation(shader.getProgramIndex(), "pointON");
 	dir_toggle = glGetUniformLocation(shader.getProgramIndex(), "dirON");
 	spot_toggle = glGetUniformLocation(shader.getProgramIndex(), "spotON");
+	fog_toggle = glGetUniformLocation(shader.getProgramIndex(), "fogON");
 
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 
