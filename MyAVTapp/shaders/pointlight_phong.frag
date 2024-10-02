@@ -36,6 +36,7 @@ uniform DirectionalLight dirLight;
 uniform int pointON;
 uniform int dirON;
 uniform int spotON;
+uniform int texMode;
 
 uniform Materials mat;
 
@@ -43,9 +44,11 @@ in Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 lightDir;
+	vec2 tex_coord;
 } DataIn;
 
 void main() {
+	vec4 texel, texel1;
 	vec4 result = vec4(0.0);
 	vec4 spec = vec4(0.0);
 
@@ -100,7 +103,12 @@ void main() {
         }
     }
 	
-
-
-	colorOut = max(result, mat.ambient);
+	if (texMode == 1) {
+		texel = texture(texmap2, DataIn.tex_coord);
+		texel1 = texture(texmap1, DataIn.tex_coord);
+		colorOut = max(result + intensity*texel*texel1 + spec, mat.ambient);
+	}
+	else {
+		colorOut = max(result, mat.ambient);
+	}
 }

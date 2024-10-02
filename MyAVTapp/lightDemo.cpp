@@ -31,6 +31,7 @@
 #include "VertexAttrDef.h"
 #include "AVTmathLib.h"
 #include "geometry.h"
+#include "Texture_Loader.h"
 
 #include "avtFreeType.h"
 
@@ -121,9 +122,11 @@ GLint spot_pos_loc0, spot_pos_loc1, spot_dir_loc0, spot_dir_loc1, spot_angle_loc
 GLint point_loc0, point_loc1, point_loc2, point_loc3, point_loc4, point_loc5;
 GLint tex_loc0, tex_loc1, tex_loc2;
 GLint dir_loc;
-
+GLint texMode_uniformId;
 
 GLint dir_toggle, point_toggle, spot_toggle;
+
+GLuint TextureArray[3];
 
 // Camera Position
 int activeCamera = 0;
@@ -249,6 +252,20 @@ static void setupRender() {
 	// use our shader
 
 	glUseProgram(shader.getProgramIndex());
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+	glUniform1i(tex_loc0, 0);
+	glUniform1i(tex_loc1, 1);
+	glUniform1i(tex_loc2, 2);
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -596,10 +613,12 @@ static void renderScene(void) {
 
 		if (j == 0) { //water
 			rotate(MODEL, -90, 1, 0, 0);
+			glUniform1i(texMode_uniformId, 1);
 		}
 		else if (j == 1) { // big island
 			translate(MODEL, 50.0f, 0.0f, 50.0f);
 			scale(MODEL, 1.5, 1, 1);
+			glUniform1i(texMode_uniformId, 0);
 		}
 		else if (j == 2) { //medium island #1
 			translate(MODEL, 60.0f, 0.0f, -45.0f);
@@ -639,6 +658,7 @@ static void renderScene(void) {
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
 }
 
@@ -861,13 +881,14 @@ GLuint setupShaders() {
 	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
 	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
 
 	if (!shader.isProgramValid()) {
 		printf("GLSL Model Program Not Valid!\n");
+		printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 		exit(1);
 	}
 
@@ -891,6 +912,7 @@ GLuint setupShaders() {
 	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
 
 	point_toggle = glGetUniformLocation(shader.getProgramIndex(), "pointON");
 	dir_toggle = glGetUniformLocation(shader.getProgramIndex(), "dirON");
@@ -930,6 +952,13 @@ void init()
 		exit(0);
 	}
 	ilInit();
+
+	//Texture Object definition
+
+	glGenTextures(3, TextureArray);
+	Texture2D_Loader(TextureArray, "stone.tga", 0);
+	Texture2D_Loader(TextureArray, "water_quad.png", 1);
+	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
