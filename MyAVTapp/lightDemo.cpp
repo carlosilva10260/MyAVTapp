@@ -836,6 +836,7 @@ GLuint setupShaders() {
 
 	if (!shader.isProgramValid()) {
 		printf("GLSL Model Program Not Valid!\n");
+		printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 		exit(1);
 	}
 

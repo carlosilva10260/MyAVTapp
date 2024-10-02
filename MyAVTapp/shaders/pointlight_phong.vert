@@ -24,7 +24,7 @@ void main () {
 	DataOut.normal = normalize(m_normal * normal.xyz);
 	DataOut.lightDir = vec3(l_pos - pos);
 	DataOut.eye = vec3(-pos);
-	DataOut.tex_coord = textCoord.st;
+	DataOut.tex_coord = texCoord.st;
 
 	gl_Position = m_pvm * position;	
 }
