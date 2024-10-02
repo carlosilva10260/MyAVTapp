@@ -59,6 +59,7 @@ const string font_name = "fonts/arial.ttf";
 Boat boat;
 int aKey = 0;
 int dKey = 0;
+int sKey = 0;
 
 // Lights
 
@@ -169,7 +170,7 @@ void refresh(int value)
 {
 	boat.updateBoatMovement();
 	boat.updateBoatRotationAngle();
-	// creatureManager.moveCreatures();
+	creatureManager.moveCreatures();
 	if (isBoatColliding()) {
 		printf("COLLISION WITH CREATURE DETECTED!!!\n");
 		boat.resetBoatPosition();
@@ -529,10 +530,14 @@ static void renderBoat() {
 			
 			if (leftoar == 1) {
 				leftang += 5.0f;
-				rotate(MODEL, leftang, -0.1 , -0.5, 0);
+				if (sKey == 1) {
+					rotate(MODEL, leftang, 0.1, 0.5, 0);
+				}
+				else {
+					rotate(MODEL, leftang, -0.1, -0.5, 0);
+				}
 				if (leftang > 360.0f) {
 					leftang = 0.0f;
-					leftoar = 0;
 				}
 			}
 			scale(MODEL, 0.1f, 1.0f, 0.1f);
@@ -544,10 +549,14 @@ static void renderBoat() {
 			rotate(MODEL, -45, 0, 0, 1);
 			if (rightoar == 1) {
 				rightang += 5.0f;
-				rotate(MODEL, rightang, 0.1, 0.5, 0);
+				if (sKey == 1) {
+					rotate(MODEL, rightang, -0.1, -0.5, 0);
+				}
+				else {
+					rotate(MODEL, rightang, 0.1, 0.5, 0);
+				}
 				if (rightang > 360.0f) {
 					rightang = 0.0f;
-					rightoar = 0;
 				}
 			}
 			scale(MODEL, 0.1f, 1.0f, 0.1f);
@@ -642,9 +651,11 @@ void onKeyUp(unsigned char key, int xx, int yy) {
 	switch (key) {
 	case 'A': case 'a':
 		aKey = 0;
+		rightoar = 0;
 		break;
 	case 'D': case 'd':
 		dKey = 0;
+		leftoar = 0;
 		break;
 	}
 }
@@ -678,7 +689,6 @@ void processKeys(unsigned char key, int xx, int yy)
 		
 		boat.accelerate();
 		rightoar = 1;
-
 		break;
 	case 'D': case 'd':
 		// left paddle stroke rotates the boat slightly to the right
@@ -689,11 +699,16 @@ void processKeys(unsigned char key, int xx, int yy)
 
 		boat.accelerate();
 		leftoar = 1;
-
 		break;
 	case 'S': case 's':
 		// Invert the paddle direction
 		boat.directionModifier *= -1;
+		if (sKey == 0) {
+			sKey = 1;
+		}
+		else {
+			sKey = 0;
+		}
 		break;
 	case 'O': case 'o':
 		// Increase paddle strength
