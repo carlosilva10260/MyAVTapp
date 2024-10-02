@@ -43,11 +43,9 @@ in Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 lightDir;
-	vec2 tex_coord;
 } DataIn;
 
 void main() {
-	vec4 texel, texel1;
 	vec4 result = vec4(0.0);
 	vec4 spec = vec4(0.0);
 
@@ -101,11 +99,8 @@ void main() {
             
         }
     }
+	
 
-	texel = texture(texmap2, DataIn.tex_coord);
-	texel1 = texture(texmap1, DataIn.tex_coord);
-
-	result += intensity * texel * texel1 + spec;
 
 	colorOut = max(result, mat.ambient);
 }
