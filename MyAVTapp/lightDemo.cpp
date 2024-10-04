@@ -151,7 +151,7 @@ int rightoar = 0;
 float leftang = 0.0f;
 float rightang = 0.0f;
 
-enum CollisionType { NONE, CREATURE, RED_FLOAT, ISLAND };
+enum CollisionType { NONE, CREATURE, RED_FLOAT, ISLAND, OUT_OF_BOUNDS };
 
 void timer(int value)
 {
@@ -183,6 +183,14 @@ CollisionType isBoatColliding() {
 		}
 	}
 
+	if (boat.pos[0] > 98 || boat.pos[0] < -98) {
+		return OUT_OF_BOUNDS;
+	}
+
+	if (boat.pos[2] > 98 || boat.pos[0] < -98) {
+		return OUT_OF_BOUNDS;
+	}
+
 	return NONE;
 }
 
@@ -201,7 +209,11 @@ void refresh(int value)
 		boat.stop();
 	}
 	else if (collisionType == RED_FLOAT) {
-		printf("COLLISION WITH ISLAND DETECTED!!!\n");
+		printf("COLLISION WITH FLOAT DETECTED!!!\n");
+		boat.stop();
+	}
+	else if (collisionType == OUT_OF_BOUNDS) {
+		printf("OUT OF BOUNDS DETECTED!!!\n");
 		boat.stop();
 	}
 
