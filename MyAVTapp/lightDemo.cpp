@@ -15,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 // include GLEW to access OpenGL 3.3 functions
 #include <GL/glew.h>
@@ -39,6 +40,7 @@
 #include "boat.h"
 #include "waterCreatureManager.h"
 #include "aabb.h"
+#include "redfloat.h"
 #include <BoundingSphere.h>
 
 using namespace std;
@@ -108,6 +110,9 @@ int fogON = 0;
 // Creatures
 WaterCreatureManager creatureManager;
 
+// Floats
+array<Redfloat, 6> floats;
+
 //External array storage defined in AVTmathLib.cpp
 
 /// The storage for matrices
@@ -164,34 +169,35 @@ void timer(int value)
 	glutTimerFunc(1000, timer, 0);
 }
 
-CollisionType isBoatColliding() {
+pair<CollisionType, int> isBoatColliding() {
 	for (auto& creature : creatureManager.creatures) {
 		if (AABB::isColliding(creature.getCreatureAABB(), boat.getBoatAABB())) {
-			return CREATURE;
+			return { CREATURE, 0 };
 		}
 	}
 
 	for (int i = 0; i < 3; i++) {
 		if (BoundingSphere::isColliding(islandBoundingSpheres[i], boat.getBoatAABB())) {
-			return ISLAND;
+			return { ISLAND, i };
 		}
 	}
 
 	for (int i = 0; i < 6; i++) {
-		if (AABB::isColliding(floatAABBs[i], boat.getBoatAABB())) {
-			return RED_FLOAT;
+		if (AABB::isColliding(floats[i].getFloatAABB(), boat.getBoatAABB())) {
+			printf("before %f %f %f\n", floats[i].pos[0], floats[i].pos[1], floats[i].pos[2]);
+			return { RED_FLOAT, i };
 		}
 	}
 
 	if (boat.pos[0] > 98 || boat.pos[0] < -98) {
-		return OUT_OF_BOUNDS;
+		return { OUT_OF_BOUNDS, 0 };
 	}
 
 	if (boat.pos[2] > 98 || boat.pos[0] < -98) {
-		return OUT_OF_BOUNDS;
+		return { OUT_OF_BOUNDS, 0 };
 	}
 
-	return NONE;
+	return { NONE, 0 };
 }
 
 void refresh(int value)
@@ -199,7 +205,8 @@ void refresh(int value)
 	boat.updateBoatMovement();
 	boat.updateBoatRotationAngle();
 	creatureManager.moveCreatures();
-	CollisionType collisionType = isBoatColliding();
+	pair<CollisionType, int> collisionPair = isBoatColliding();
+	CollisionType collisionType = collisionPair.first;
 	if (collisionType == CREATURE) {
 		printf("COLLISION WITH CREATURE DETECTED!!!\n");
 		boat.resetBoatPosition();
@@ -210,11 +217,16 @@ void refresh(int value)
 	}
 	else if (collisionType == RED_FLOAT) {
 		printf("COLLISION WITH FLOAT DETECTED!!!\n");
+		floats[collisionPair.second].onCollide(boat.dir, boat.speed);
 		boat.stop();
 	}
 	else if (collisionType == OUT_OF_BOUNDS) {
 		printf("OUT OF BOUNDS DETECTED!!!\n");
 		boat.stop();
+	}
+
+	for (auto& redfloat : floats) {
+		redfloat.updateFloatPos();
 	}
 
 	glutPostRedisplay();
@@ -260,8 +272,8 @@ static void setupRender() {
 	loadIdentity(MODEL);
 
 	if (activeCamera == 2) {
-		cams[activeCamera].setTarget({ boat.pos[0] + 0.5f, boat.pos[1], boat.pos[2] });
-		cams[activeCamera].setPos({ boat.pos[0] + 0.5f, boat.pos[1] + 6, boat.pos[2] - 10 });
+		cams[activeCamera].setTarget({ boat.pos[0] + 0.5f + boat.dir[0], boat.pos[1], boat.pos[2] + boat.dir[2]});
+		cams[activeCamera].setPos({ boat.pos[0] - boat.dir[0] * 8, boat.pos[1] + 6, boat.pos[2] - boat.dir[2] * 8});
 	}
 
 	const auto cameraPos = cams[activeCamera].getPos();
@@ -380,34 +392,40 @@ static void renderFloats() {
 
 		// 1.0f radius
 		if (i == 0 || i == 1) {
-			translate(MODEL, 19.0f, 0.2f, 75.0f);
-			floatAABBs[0] = AABB(19.0f - 1.0f, 0.0f, 75.0f - 1.0f,
-				19.0f + 1.0f, 0.0f, 75.0f + 1.0f);
+			translate(MODEL, floats[0].pos[0], floats[0].pos[1], floats[0].pos[2]);
+			pointLightPos[0][0] = floats[0].pos[0];
+			pointLightPos[0][1] = floats[0].pos[1];
+			pointLightPos[0][2] = floats[0].pos[2];
 		}
 		if (i == 2 || i == 3) {
-			translate(MODEL, -49.0f, 0.2f, -49.0f);
-			floatAABBs[1] = AABB(-49.0f - 1.0f, 0.0f, -49.0f - 1.0f,
-				-49.0f + 1.0f, 0.0f, -49.0f + 1.0f);
+			translate(MODEL, floats[1].pos[0], floats[1].pos[1], floats[1].pos[2]);
+			pointLightPos[1][0] = floats[1].pos[0];
+			pointLightPos[1][1] = floats[1].pos[1];
+			pointLightPos[1][2] = floats[1].pos[2];
 		}
 		if (i == 4 || i == 5) {
-			translate(MODEL, 50.0f, 0.2f, 0.0f);
-			floatAABBs[2] = AABB(50.0f - 1.0f, 0.0f, 0.0f - 1.0f,
-				50.0f + 1.0f, 0.0f, 0.0f + 1.0f);
+			translate(MODEL, floats[2].pos[0], floats[2].pos[1], floats[2].pos[2]);
+			pointLightPos[2][0] = floats[2].pos[0];
+			pointLightPos[2][1] = floats[2].pos[1];
+			pointLightPos[2][2] = floats[2].pos[2];
 		}
 		if (i == 6 || i == 7) {
-			translate(MODEL, -20.0f, 0.2f, 18.0f);
-			floatAABBs[3] = AABB(-20.0f - 1.0f, 0.0f, 18.0f - 1.0f,
-				-20.0f + 1.0f, 0.0f, 18.0f + 1.0f);
+			translate(MODEL, floats[3].pos[0], floats[3].pos[1], floats[3].pos[2]);
+			pointLightPos[3][0] = floats[3].pos[0];
+			pointLightPos[3][1] = floats[3].pos[1];
+			pointLightPos[3][2] = floats[3].pos[2];
 		}
 		if (i == 8 || i == 9) {
-			translate(MODEL, 10.0f, 0.2f, -55.0f);
-			floatAABBs[4] = AABB(10.0f - 1.0f, 0.0f, -55.0f - 1.0f,
-				10.0f + 1.0f, 0.0f, -55.0f + 1.0f);
+			translate(MODEL, floats[4].pos[0], floats[4].pos[1], floats[4].pos[2]);
+			pointLightPos[4][0] = floats[4].pos[0];
+			pointLightPos[4][1] = floats[4].pos[1];
+			pointLightPos[4][2] = floats[4].pos[2];
 		}
 		if (i == 10 || i == 11) {
-			translate(MODEL, -72.0f, 0.2f, 72.0f);
-			floatAABBs[5] = AABB(-72.0f - 1.0f, 0.0f, 72.0f - 1.0f,
-				-72.0f + 1.0f, 0.0f, 72.0f + 1.0f);
+			translate(MODEL, floats[5].pos[0], floats[5].pos[1], floats[5].pos[2]);
+			pointLightPos[5][0] = floats[5].pos[0];
+			pointLightPos[5][1] = floats[5].pos[1];
+			pointLightPos[5][2] = floats[5].pos[2];
 		}
 
 		// send matrices to OGL
@@ -582,21 +600,21 @@ static void renderBoat() {
 		pushMatrix(MODEL);
 
 		if (i == 0) { // pawn
-			translate(MODEL, 0.5f, 0.5f, 1.0f);
+			translate(MODEL, 0.0f, 0.5f, 1.0f);
 			scale(MODEL, 0.25f, 0.25, 0.25);
 		}
 		if (i == 1) { //base
-			translate(MODEL, 0.0f, 0.0f, -0.5f);
+			translate(MODEL, -0.5f, 0.0f, -0.5f);
 			scale(MODEL, 1.0, 0.5, 3.0);
 		}
 		if (i == 2) { // front
-			translate(MODEL, 0.5f, 0.0f, 2.5f);
+			translate(MODEL, 0.0f, 0.0f, 2.5f);
 			scale(MODEL, 0.25f, 0.25f, 0.25f);
 			rotate(MODEL, 90, 1, 0,0);
 			rotate(MODEL, 45, 0, 1, 0);
 		}
 		if (i == 3) { //oars
-			translate(MODEL, 1.5f, 0.0f, 1.5f);
+			translate(MODEL, 1.0f, 0.0f, 1.5f);
 			rotate(MODEL, 45, 0, 0, 1);
 			
 			if (leftoar == 1) {
@@ -616,7 +634,7 @@ static void renderBoat() {
 		}
 		if (i == 4) { //oars
 			
-			translate(MODEL, -0.5f, 0.0f, 1.5f);
+			translate(MODEL, -1.0f, 0.0f, 1.5f);
 			rotate(MODEL, -45, 0, 0, 1);
 			if (rightoar == 1) {
 				rightang += 5.0f;
@@ -1046,7 +1064,7 @@ void init()
 	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 1.0f };
 	float h20_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess = 9999.0f;
+	float shininess = 3000.0f;
 	int texcount = 0;
 
 	//Create Plane/Water
@@ -1184,7 +1202,15 @@ void init()
 		amesh.mat.texCount = texcount;
 		floatMeshes.push_back(amesh);
 
+		floats[i] = Redfloat();
 	}
+
+	floats[0].pos = { 19.0f, 0.2f, 75.0f };
+	floats[1].pos = { -49.0f, 0.2f, -49.0f };
+	floats[2].pos = { 50.0f, 0.2f, 0.0f };
+	floats[3].pos = { -20.0f, 0.2f, 18.0f };
+	floats[4].pos = { 10.0f, 0.2f, -55.0f };
+	floats[5].pos = { -72.0f, 0.2f, 72.0f };
 
 	float creature_amb[] = { 0.0f, 0.2f, 0.1f, 1.0f };    // A dark green ambient color
 	float creature_diff[] = { 0.1f, 0.6f, 0.3f, 1.0f };   // A medium green diffuse color
