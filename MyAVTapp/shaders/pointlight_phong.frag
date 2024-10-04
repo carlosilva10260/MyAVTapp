@@ -105,25 +105,26 @@ void main() {
     }
 	
 	//fog factor
-    float dist = 0;
-    vec3 final_color;
-    if (fogON == 0) {
-		colorOut = max(vec4(result.rgb, mat.diffuse.a), mat.ambient);
-    }
-    else {
-        dist = length(-DataIn.eye);
-        float fogAmount = exp( -dist*0.05 );
-        //clamp(fogAmount, 0, 1.0);
-        vec3 fogColor = vec3(0.5,0.6,0.7);
-        final_color = mix(fogColor, vec3(result), fogAmount );
-		colorOut = max(vec4(final_color, mat.diffuse.a), mat.ambient);
-    }
+	float dist = 0;
+	if (fogON == 0) {
+		dist = abs(-DataIn.eye.z);
+	}
+	else {
+		dist = length(-DataIn.eye);
+	}
 
-    
-    if (texMode == 1) {
-        texel = texture(texmap2, DataIn.tex_coord);
-        texel1 = texture(texmap1, DataIn.tex_coord);
-        colorOut = max(colorOut + intensity*texel*texel1 + spec, mat.ambient);
-		colorOut = vec4(colorOut.rgb, mat.diffuse.a);
-    }
+	float fogAmount = exp( -dist*0.05 );
+	clamp(fogAmount, 0, 1.0);
+	vec3 fogColor = vec3(0.5,0.6,0.7);
+	vec3 final_color = mix(fogColor, vec3(result), fogAmount );
+	
+	
+	if (texMode == 1) {
+		texel = texture(texmap2, DataIn.tex_coord);
+		texel1 = texture(texmap1, DataIn.tex_coord);
+		colorOut = max(vec4(final_color, 1) + intensity*texel*texel1 + spec, mat.ambient);
+	}
+	else {
+		colorOut = max(vec4(final_color, 1),mat.ambient);
+	}
 }
