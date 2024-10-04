@@ -501,11 +501,11 @@ void renderTree(){
 			scale(MODEL, 0.5, 0.5, 0.5);
 		}
 		if (i == 4) { //tree base big island
-			translate(MODEL, 48.0f, 8.0f, 44.0f);
+			translate(MODEL, 48.0f, 9.0f, 44.0f);
 			scale(MODEL, 0.5, 0.5, 0.5);
 		}
 		if (i == 5) { //tree top big island
-			translate(MODEL, 48.0f, 9.0f, 44.0f);
+			translate(MODEL, 48.0f, 10.0f, 44.0f);
 			scale(MODEL, 0.5, 0.5, 0.5);
 		}
 		if (i == 6) { //tree base big island
@@ -671,26 +671,51 @@ static void renderBoat() {
 	popMatrix(MODEL);
 }
 
+static void renderWater(void) {
+	glDepthMask(GL_FALSE);
+	sendMaterial(myMeshes[0].mat);
+	pushMatrix(MODEL);
+
+	rotate(MODEL, -90, 1, 0, 0);
+	glUniform1i(texMode_uniformId, 1);
+
+	// send matrices to OGL
+	computeDerivedMatrix(PROJ_VIEW_MODEL);
+	glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+	computeNormalMatrix3x3();
+	glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+	// Render mesh
+	glBindVertexArray(myMeshes[0].vao);
+
+	glDrawElements(myMeshes[0].type, myMeshes[0].numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+
+	glDepthMask(GL_TRUE);
+
+	glUniform1i(texMode_uniformId, 0);
+	popMatrix(MODEL);
+}
+
 static void renderScene(void) {	
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	setupRender();
 
 	renderTree();
 	renderFloats();
 	renderCreatures();
+	renderBoat();
 
-	for (int j = 0; j < 4; ++j) {
+	for (int j = 1; j < 4; ++j) {
 		// send the material
 		sendMaterial(myMeshes[j].mat);
 		pushMatrix(MODEL);
 
-		if (j == 0) { //water
-			rotate(MODEL, -90, 1, 0, 0);
-			glUniform1i(texMode_uniformId, 1);
-		}
-		else if (j == 1) { // big island
+		if (j == 1) { // big island
 			translate(MODEL, 50.0f, 0.0f, 50.0f);
 			scale(MODEL, 1.5, 1, 1.5);
-			glUniform1i(texMode_uniformId, 0);
 			islandBoundingSpheres[0] = BoundingSphere(50.0f, 0.0f, 50.0f, 15.0f);
 		}
 		else if (j == 2) { //medium island #1
@@ -715,18 +740,15 @@ static void renderScene(void) {
 		glDrawElements(myMeshes[j].type, myMeshes[j].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
+		glUniform1i(texMode_uniformId, 0);
 		popMatrix(MODEL);
 	}
 
-	renderBoat();
-
-
+	renderWater();
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	int m_viewport[4];
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
 
@@ -1026,6 +1048,9 @@ GLuint setupShaders() {
 
 void init()
 {
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
 	MyMesh amesh;
 
 	/* Initialization of DevIL */
@@ -1060,9 +1085,9 @@ void init()
 
 	cams[2].setPos({ 4, 16, 4 });
 
-	float h20_amb[] = { 0.0f, 0.0f, 0.25f, 1.0f };
-	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 1.0f };
-	float h20_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+	float h20_amb[] = { 0.0f, 0.0f, 0.25f, 0.7f };
+	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 0.7f };
+	float h20_spec[] = { 0.9f, 0.9f, 0.9f, 0.7f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float shininess = 3000.0f;
 	int texcount = 0;
