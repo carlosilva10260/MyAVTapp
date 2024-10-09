@@ -6,7 +6,6 @@
 #include <GL/freeglut.h>
 class Boat
 {
-	int lastTime = 0;
 public:
 	std::array<float, 3> dir = { 0.0f, 0.0f, 1.0f };
 	std::array<float, 3> pos = { 0.0f, 0.0f, 0.0f };
@@ -44,10 +43,7 @@ public:
 		this->acceleration += paddleStrength * directionModifier;
 	}
 
-	void updateBoatMovement() {
-		int currentTime = glutGet(GLUT_ELAPSED_TIME);
-		float deltaTime = (currentTime - this->lastTime) / 1000.0f;
-		this->lastTime = currentTime;
+	void updateBoatMovement(float deltaTime) {
 		// Update speed with acceleration
 		this->speed += this->acceleration * deltaTime;
 

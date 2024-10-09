@@ -5,7 +5,6 @@
 #include <stdio.h>
 class Redfloat
 {
-	int lastTime = 0;
 	float decelerationRate = 1.5f;
 public:
 	std::array<float, 3> pos;
@@ -23,10 +22,7 @@ public:
 			pos[0] + 1.0f, pos[1], pos[2] + 1.0f);
 	}
 
-	void updateFloatPos(void) {
-		int currentTime = glutGet(GLUT_ELAPSED_TIME);
-		float deltaTime = (currentTime - this->lastTime) / 1000.0f;
-		this->lastTime = currentTime;
+	void updateFloatPos(float deltaTime) {
 		if (speed == 0.0f) return;
 
 		this->pos[0] += dir[0] * (speed * deltaTime);

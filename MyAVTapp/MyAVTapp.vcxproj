@@ -164,6 +164,7 @@
     <ClCompile Include="basic_geometry.cpp" />
     <ClCompile Include="boat.cpp" />
     <ClCompile Include="BoundingSphere.cpp" />
+    <ClCompile Include="GameTime.cpp" />
     <ClCompile Include="lightDemo.cpp" />
     <ClCompile Include="redfloat.cpp" />
     <ClCompile Include="Texture_Loader.cpp" />
@@ -180,6 +181,7 @@
     <ClInclude Include="camera.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="ft2build.h" />
+    <ClInclude Include="GameTime.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="redfloat.h" />
     <ClInclude Include="Texture_Loader.h" />

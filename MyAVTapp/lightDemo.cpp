@@ -41,6 +41,7 @@
 #include "waterCreatureManager.h"
 #include "aabb.h"
 #include "redfloat.h"
+#include "GameTime.h"
 #include <BoundingSphere.h>
 
 using namespace std;
@@ -156,10 +157,21 @@ int rightoar = 0;
 float leftang = 0.0f;
 float rightang = 0.0f;
 
+// Lives and Timer
+int lives = 5;
+GameTime elapsedTime;
+int lastTime = 0;
+
+// Game state
+bool paused = false;
+
 enum CollisionType { NONE, CREATURE, RED_FLOAT, ISLAND, OUT_OF_BOUNDS };
 
 void timer(int value)
 {
+	if (!paused) {
+		elapsedTime.addSecond();
+	}
 	std::ostringstream oss;
 	oss << CAPTION << ": " << FrameCount << " FPS @ (" << WinX << "x" << WinY << ")";
 	std::string s = oss.str();
@@ -202,7 +214,15 @@ pair<CollisionType, int> isBoatColliding() {
 
 void refresh(int value)
 {
-	boat.updateBoatMovement();
+	int currentTime = glutGet(GLUT_ELAPSED_TIME);
+	float deltaTime = (currentTime - lastTime) / 1000.0f;
+	lastTime = currentTime;
+	if (paused) {
+		glutPostRedisplay();
+		glutTimerFunc(1000 / 60, refresh, 0);
+		return;
+	}
+	boat.updateBoatMovement(deltaTime);
 	boat.updateBoatRotationAngle();
 	creatureManager.moveCreatures();
 	pair<CollisionType, int> collisionPair = isBoatColliding();
@@ -226,7 +246,7 @@ void refresh(int value)
 	}
 
 	for (auto& redfloat : floats) {
-		redfloat.updateFloatPos();
+		redfloat.updateFloatPos(deltaTime);
 	}
 
 	glutPostRedisplay();
@@ -752,6 +772,22 @@ static void renderScene(void) {
 	int m_viewport[4];
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
 
+	pushMatrix(MODEL);
+	loadIdentity(MODEL);
+	pushMatrix(PROJECTION);
+	loadIdentity(PROJECTION);
+	pushMatrix(VIEW);
+	loadIdentity(VIEW);
+	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
+	RenderText(shaderText, "Lives: " + std::to_string(lives), 10.0f, 728.0f, 0.8f, 1.0f, 1.0f, 1.0f);
+	RenderText(shaderText, "Time: " + elapsedTime.formatTime(), 700.0f, 728.0f, 0.8f, 1.0f, 1.0f, 1.0f);
+	if (paused) {
+		RenderText(shaderText, "Pause! Press 'P' to unpause.", 500.0f, 300.0f, 0.8f, 1.0f, 1.0f, 1.0f);
+	}
+	popMatrix(PROJECTION);
+	popMatrix(VIEW);
+	popMatrix(MODEL);
+
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
@@ -779,6 +815,12 @@ void onKeyUp(unsigned char key, int xx, int yy) {
 
 void processKeys(unsigned char key, int xx, int yy)
 {
+	if (paused) {
+		if (key == 'p' || key == 'P') {
+			paused = !paused;
+		}
+		return;
+	}
 	switch (key) {
 
 	case 27:
@@ -867,6 +909,10 @@ void processKeys(unsigned char key, int xx, int yy)
 		else {
 			fogON = 1;
 		}
+		break;
+
+	case 'P': case 'p':
+		paused = !paused;
 		break;
 	}
 }
