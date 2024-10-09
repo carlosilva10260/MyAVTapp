@@ -167,6 +167,12 @@ bool paused = false;
 
 enum CollisionType { NONE, CREATURE, RED_FLOAT, ISLAND, OUT_OF_BOUNDS };
 
+static void restartGame() {
+	boat.resetBoatPosition();
+	elapsedTime.reset();
+	lives = 5;
+}
+
 void timer(int value)
 {
 	if (!paused) {
@@ -815,12 +821,19 @@ void onKeyUp(unsigned char key, int xx, int yy) {
 
 void processKeys(unsigned char key, int xx, int yy)
 {
-	if (paused) {
-		if (key == 'p' || key == 'P') {
-			paused = !paused;
-		}
-		return;
+	// These keys are valid anytime
+	if (key == 'p' || key == 'P') {
+		paused = !paused;
 	}
+
+	if (key == 'r' || key == 'R') {
+		restartGame();
+	}
+	
+	if (paused) return;
+
+	// From here, only when the game is unpaused we will handle the keypress
+	
 	switch (key) {
 
 	case 27:
@@ -909,10 +922,6 @@ void processKeys(unsigned char key, int xx, int yy)
 		else {
 			fogON = 1;
 		}
-		break;
-
-	case 'P': case 'p':
-		paused = !paused;
 		break;
 	}
 }
