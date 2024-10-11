@@ -164,6 +164,7 @@ int lastTime = 0;
 
 // Game state
 bool paused = false;
+bool restart = false;
 
 enum CollisionType { NONE, CREATURE, RED_FLOAT, ISLAND, OUT_OF_BOUNDS };
 
@@ -175,7 +176,7 @@ static void restartGame() {
 
 void timer(int value)
 {
-	if (!paused) {
+	if (!paused && !restart) {
 		elapsedTime.addSecond();
 	}
 	std::ostringstream oss;
@@ -223,7 +224,7 @@ void refresh(int value)
 	int currentTime = glutGet(GLUT_ELAPSED_TIME);
 	float deltaTime = (currentTime - lastTime) / 1000.0f;
 	lastTime = currentTime;
-	if (paused) {
+	if (paused || restart) {
 		glutPostRedisplay();
 		glutTimerFunc(1000 / 60, refresh, 0);
 		return;
@@ -236,6 +237,7 @@ void refresh(int value)
 	if (collisionType == CREATURE) {
 		printf("COLLISION WITH CREATURE DETECTED!!!\n");
 		boat.resetBoatPosition();
+		lives--;
 	}
 	else if (collisionType == ISLAND) {
 		printf("COLLISION WITH ISLAND DETECTED!!!\n");
@@ -790,6 +792,10 @@ static void renderScene(void) {
 	if (paused) {
 		RenderText(shaderText, "Pause! Press 'P' to unpause.", 500.0f, 300.0f, 0.8f, 1.0f, 1.0f, 1.0f);
 	}
+	if (lives == 0) {
+		RenderText(shaderText, "Game Over! Press 'R' to restart.", 100.0f, 100.0f, 0.8f, 1.0f, 1.0f, 1.0f);
+		restart = true;
+	}
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
 	popMatrix(MODEL);
@@ -822,12 +828,15 @@ void onKeyUp(unsigned char key, int xx, int yy) {
 void processKeys(unsigned char key, int xx, int yy)
 {
 	// These keys are valid anytime
-	if (key == 'p' || key == 'P') {
-		paused = !paused;
-	}
-
 	if (key == 'r' || key == 'R') {
 		restartGame();
+		restart = false;
+	}
+
+	if (restart) return;
+
+	if (key == 'p' || key == 'P') {
+		paused = !paused;
 	}
 	
 	if (paused) return;
