@@ -300,8 +300,33 @@ static void setupRender() {
 	loadIdentity(MODEL);
 
 	if (activeCamera == 2) {
-		cams[activeCamera].setTarget({ boat.pos[0] + 0.5f + boat.dir[0], boat.pos[1], boat.pos[2] + boat.dir[2]});
-		cams[activeCamera].setPos({ boat.pos[0] - boat.dir[0] * 8, boat.pos[1] + 6, boat.pos[2] - boat.dir[2] * 8});
+		// Convert alpha and beta to radians for trigonometric functions
+		float alphaRad = cams[activeCamera].getAlpha() * 3.14159f / 180.0f;
+		float betaRad = cams[activeCamera].getBeta() * 3.14159f / 180.0f;
+		float r = cams[activeCamera].getR();  // Distance from boat
+
+		// Use the boat's direction vector to offset the camera position
+		std::array<float, 3> boatDir = boat.dir;  // Direction vector (normalized)
+		float boatForwardX = boatDir[0];
+		float boatForwardZ = boatDir[2];
+
+		// Apply alpha (horizontal rotation) to rotate around the boat's Y axis
+		float rotatedX = boatForwardX * cos(alphaRad) - boatForwardZ * sin(alphaRad);
+		float rotatedZ = boatForwardX * sin(alphaRad) + boatForwardZ * cos(alphaRad);
+
+		// Position the camera behind the boat, adjusted by the rotated direction
+		float camX = boat.pos[0] - rotatedX * r * cos(betaRad);
+		float camY = boat.pos[1] + r * sin(betaRad);  // Adjust vertical position
+		float camZ = boat.pos[2] - rotatedZ * r * cos(betaRad);
+
+		cams[activeCamera].setPos({ camX, camY, camZ });
+
+		// Target the boat's position, using the boat's forward direction
+		float targetX = boat.pos[0] + rotatedX;
+		float targetY = boat.pos[1];
+		float targetZ = boat.pos[2] + rotatedZ;
+
+		cams[activeCamera].setTarget({ targetX, targetY, targetZ });
 	}
 
 	const auto cameraPos = cams[activeCamera].getPos();
@@ -970,49 +995,28 @@ void processMouseButtons(int button, int state, int xx, int yy)
 
 // Track mouse motion while buttons are pressed
 
-void processMouseMotion(int xx, int yy)
-{
-
+void processMouseMotion(int xx, int yy) {
 	int deltaX, deltaY;
-	float alphaAux, betaAux;
-	float rAux;
 
-	deltaX = -xx + startX;
+	deltaX = xx - startX;
 	deltaY = yy - startY;
 
-	// left mouse button: move camera
-	if (tracking == 1) {
+	if (tracking == 1) {  // If left mouse button is being tracked
+		if (activeCamera == 2) {
+			// Update alpha (horizontal) and beta (vertical) with mouse movement
+			cams[activeCamera].setAlpha(cams[activeCamera].getAlpha() + deltaX * 0.1f);
+			cams[activeCamera].setBeta(cams[activeCamera].getBeta() + deltaY * 0.1f);
 
+			// Constrain beta so the camera doesn't flip upside down
+			if (cams[activeCamera].getBeta() > 85.0f)
+				cams[activeCamera].setBeta(85.0f);
+			else if (cams[activeCamera].getBeta() < -85.0f)
+				cams[activeCamera].setBeta(-85.0f);
+		}
 
-		alphaAux = alpha + deltaX;
-		betaAux = beta + deltaY;
-
-		if (betaAux > 85.0f)
-			betaAux = 85.0f;
-		else if (betaAux < -85.0f)
-			betaAux = -85.0f;
-		rAux = r;
+		startX = xx;
+		startY = yy;
 	}
-	// right mouse button: zoom
-	else if (tracking == 2) {
-
-		alphaAux = alpha;
-		betaAux = beta;
-		rAux = r + (deltaY * 0.01f);
-		if (rAux < 0.1f)
-			rAux = 0.1f;
-	}
-
-	float camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	float camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	float camY = rAux * sin(betaAux * 3.14f / 180.0f);
-
-	if (activeCamera == 2) {
-		cams[activeCamera].setPos({ camX, camY, camZ });
-	}
-
-	//  uncomment this if not using an idle or refresh func
-	//	glutPostRedisplay();
 }
 
 

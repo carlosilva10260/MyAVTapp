@@ -8,9 +8,12 @@ class Camera
 	std::array<float, 3> camUp;
 
 	int type;
+	float alpha;
+	float beta;
+	float r; // dist to the boat
 
 public:
-	Camera(int type = 0) : type(type), camPos({ 0.0f, 0.0f, 0.0f }), camTarget({ 0.0f, 0.0f, 0.0f }), camUp({0.0f, 1.0f, 0.0f}) {}
+	Camera(int type = 0) : type(type), camPos({ 0.0f, 0.0f, 0.0f }), camTarget({ 0.0f, 0.0f, 0.0f }), camUp({0.0f, 1.0f, 0.0f}), alpha(0.0f), beta(30.0f), r(10.0f) {}
 
 	void setPos(const std::array<float, 3>& pos) {
 		camPos = pos;
@@ -43,4 +46,13 @@ public:
 	std::array<float, 3> getUp(void) const {
 		return camUp;
 	}
+
+	void setAlpha(float angle) { alpha = angle; }
+	float getAlpha() const { return alpha; }
+
+	void setBeta(float angle) { beta = angle; }
+	float getBeta() const { return beta; }
+
+	void setR(float radius) { r = radius; }
+	float getR() const { return r; }
 };
