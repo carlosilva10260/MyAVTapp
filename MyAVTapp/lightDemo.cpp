@@ -112,7 +112,7 @@ int fogON = 0;
 WaterCreatureManager creatureManager;
 
 // Floats
-array<Redfloat, 6> floats;
+array<Redfloat, 7> floats;
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -165,12 +165,34 @@ int lastTime = 0;
 // Game state
 bool paused = false;
 bool restart = false;
+bool goal_flag = false;
 
 enum CollisionType { NONE, CREATURE, RED_FLOAT, ISLAND, OUT_OF_BOUNDS };
+
+static void goal_position() {
+	int goal_pos = rand() % 5;
+
+	if (goal_pos == 0) {
+		floats[6].pos = { -69.0f, 0.2f, -69.0f };
+	}
+	else if (goal_pos == 1) {
+		floats[6].pos = { 69.0f, 0.2f, 69.0f };
+	}
+	else if (goal_pos == 2) {
+		floats[6].pos = { -75.0f, 0.2f, 75.0f };
+	}
+	else if (goal_pos == 3) {
+		floats[6].pos = { 69.0f, 0.2f, -69.0f };
+	}
+	else if (goal_pos == 4) {
+		floats[6].pos = { -39.0f, 0.2f, -69.0f };
+	}
+}
 
 static void restartGame() {
 	boat.resetBoatPosition();
 	elapsedTime.reset();
+	goal_position();
 	lives = 5;
 }
 
@@ -201,8 +223,11 @@ pair<CollisionType, int> isBoatColliding() {
 		}
 	}
 
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 7; i++) {
 		if (AABB::isColliding(floats[i].getFloatAABB(), boat.getBoatAABB())) {
+			if (floats[i].yellow) {
+				goal_flag = true;
+			}
 			printf("before %f %f %f\n", floats[i].pos[0], floats[i].pos[1], floats[i].pos[2]);
 			return { RED_FLOAT, i };
 		}
@@ -438,7 +463,7 @@ static void sendMaterial(const Material& mat) {
 static void renderFloats() {
 	pushMatrix(MODEL);
 
-	for (int i = 0; i < 12; ++i) {
+	for (int i = 0; i < 14; ++i) {
 		// send the material
 		sendMaterial(floatMeshes[i].mat);
 		pushMatrix(MODEL);
@@ -479,6 +504,10 @@ static void renderFloats() {
 			pointLightPos[5][0] = floats[5].pos[0];
 			pointLightPos[5][1] = floats[5].pos[1];
 			pointLightPos[5][2] = floats[5].pos[2];
+		}
+		if (i == 12 || i == 13) {
+			translate(MODEL, floats[6].pos[0], floats[6].pos[1], floats[6].pos[2]);
+			floats[6].yellow = true;
 		}
 
 		// send matrices to OGL
@@ -821,6 +850,10 @@ static void renderScene(void) {
 		RenderText(shaderText, "Game Over! Press 'R' to restart.", 100.0f, 100.0f, 0.8f, 1.0f, 1.0f, 1.0f);
 		restart = true;
 	}
+	if (goal_flag) {
+		RenderText(shaderText, "You won! Press 'R' to try again!", 100.0f, 100.0f, 0.8f, 1.0f, 1.0f, 1.0f);
+		restart = true;
+	}
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
 	popMatrix(MODEL);
@@ -856,6 +889,7 @@ void processKeys(unsigned char key, int xx, int yy)
 	if (key == 'r' || key == 'R') {
 		restartGame();
 		restart = false;
+		goal_flag = false;
 	}
 
 	if (restart) return;
@@ -1320,6 +1354,33 @@ void init()
 		amesh.mat.texCount = texcount;
 		creatureMeshes.push_back(amesh);
 	}
+
+	float goal_amb[] = { 0.1f, 0.1f, 0.0f, 1.0f };
+	float goal_diff[] = { 1.0f, 1.0f, 0.0f, 1.0f };
+	float goal_spec[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	amesh = createCylinder(6.0f, 0.5f, 50);
+	memcpy(amesh.mat.ambient, goal_amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, goal_diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, goal_spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	floatMeshes.push_back(amesh);
+
+
+	amesh = createSphere(1.0f, 10);
+	memcpy(amesh.mat.ambient, goal_amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, goal_diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, goal_spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	floatMeshes.push_back(amesh);
+
+	floats[numOfFloats] = Redfloat();
+
+	goal_position();
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);

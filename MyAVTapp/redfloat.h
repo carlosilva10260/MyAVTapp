@@ -10,6 +10,7 @@ public:
 	std::array<float, 3> pos;
 	std::array<float, 3> dir = { 0.0f, 0.0f, 0.0f };
 	float speed = 0.0f;
+	bool yellow = false;
 
 	Redfloat() : pos({0.0f, 0.0f, 0.0f}) {}
 
