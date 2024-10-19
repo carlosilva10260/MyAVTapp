@@ -33,6 +33,7 @@
 #include "AVTmathLib.h"
 #include "geometry.h"
 #include "Texture_Loader.h"
+#include "l3dBillboard.h"
 
 #include "avtFreeType.h"
 
@@ -103,6 +104,7 @@ array<BoundingSphere, 3> islandBoundingSpheres;
 vector<struct MyMesh> boatMeshes;
 vector<struct MyMesh> treeMeshes;
 vector<struct MyMesh> floatMeshes;
+vector<struct MyMesh> mesh;
 array<AABB, 6> floatAABBs;
 vector<struct MyMesh> creatureMeshes;
 
@@ -129,13 +131,15 @@ GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint spot_pos_loc0, spot_pos_loc1, spot_dir_loc0, spot_dir_loc1, spot_angle_loc0, spot_angle_loc1;
 GLint point_loc0, point_loc1, point_loc2, point_loc3, point_loc4, point_loc5;
-GLint tex_loc0, tex_loc1, tex_loc2;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3;
 GLint dir_loc;
 GLint texMode_uniformId;
 
 GLint dir_toggle, point_toggle, spot_toggle, fog_toggle;
 
-GLuint TextureArray[3];
+GLuint TextureArray[4];
+
+int deltaMove = 0, deltaUp = 0, type = 0;
 
 // Camera Position
 int activeCamera = 0;
@@ -390,10 +394,14 @@ static void setupRender() {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
+	glUniform1i(tex_loc3, 3);
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -557,7 +565,7 @@ static void renderCreatures() {
 	}
 }
 
-void renderTree(){
+void renderTree() {
 	pushMatrix(MODEL);
 
 	for (int i = 0; i < 16; ++i) {
@@ -571,7 +579,7 @@ void renderTree(){
 			scale(MODEL, 0.5, 0.5, 0.5);
 		}
 		if (i == 1) { //tree top big island
-			translate(MODEL,45.0f, 10.5f, 53.0f);
+			translate(MODEL, 45.0f, 10.5f, 53.0f);
 			scale(MODEL, 0.5, 0.5, 0.5);
 		}
 		if (i == 2) { //tree base big island
@@ -648,6 +656,64 @@ void renderTree(){
 		popMatrix(MODEL);
 	}
 	popMatrix(MODEL);
+
+	float pos[3], right[3], up[3];
+	GLint loc;
+	float x = 0.0f, y = 1.75f, z = 10.0f;
+	float cam[3] = { cams[activeCamera].getPos()[0], cams[activeCamera].getPos()[1], cams[activeCamera].getPos()[2]};
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glUniform1i(texMode_uniformId, 2); // draw textured quads
+
+	for (int i = -4; i < 4; i++) {
+		for (int j = -4; j < 4; j++) {
+			pushMatrix(MODEL);
+			translate(MODEL, 5 + i * 20.0, -3, 5 + j * 20.0);
+
+			pos[0] = 5 + i * 10.0; pos[1] = 0; pos[2] = 5 + j * 10.0;
+
+			if (type == 2)
+				l3dBillboardSphericalBegin(cam, pos);
+			else if (type == 3)
+				l3dBillboardCylindricalBegin(cam, pos);
+
+			int objId = 0;  //quad for tree
+
+			//diffuse and ambient color are not used in the tree quads
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+			glUniform4fv(loc, 1, mesh[objId].mat.specular);
+			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+			glUniform1f(loc, mesh[objId].mat.shininess);
+
+			pushMatrix(MODEL);
+			translate(MODEL, 0.0, 3.0, 0.0f);
+
+			// send matrices to OGL
+			if (type == 0 || type == 1) {     //Cheating matrix reset billboard techniques
+				computeDerivedMatrix(VIEW_MODEL);
+
+				//reset VIEW_MODEL
+				if (type == 0) BillboardCheatSphericalBegin();
+				else BillboardCheatCylindricalBegin();
+
+				computeDerivedMatrix_PVM(); // calculate PROJ_VIEW_MODEL
+			}
+			else computeDerivedMatrix(PROJ_VIEW_MODEL);
+
+			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+			computeNormalMatrix3x3();
+			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+			glBindVertexArray(mesh[objId].vao);
+			glDrawElements(mesh[objId].type, mesh[objId].numIndexes, GL_UNSIGNED_INT, 0);
+			popMatrix(MODEL);
+
+			popMatrix(MODEL);
+		}
+	}
+	glUniform1i(texMode_uniformId, 0); // draw textured quads
 }
 
 static void renderBoat() {
@@ -1118,6 +1184,7 @@ GLuint setupShaders() {
 	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
 
 	point_toggle = glGetUniformLocation(shader.getProgramIndex(), "pointON");
@@ -1169,6 +1236,7 @@ void init()
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "water_quad.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
+	Texture2D_Loader(TextureArray, "tree.tga", 3);
 
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
@@ -1354,6 +1422,18 @@ void init()
 		amesh.mat.texCount = texcount;
 		creatureMeshes.push_back(amesh);
 	}
+
+	//tree specular color
+	float tree_spec[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+	float tree_shininess = 10.0f;
+
+	//billboard trees
+	amesh = createQuad(6, 6);
+	memcpy(amesh.mat.specular, tree_spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = tree_shininess;
+	amesh.mat.texCount = texcount;
+	mesh.push_back(amesh);
 
 	float goal_amb[] = { 0.1f, 0.1f, 0.0f, 1.0f };
 	float goal_diff[] = { 1.0f, 1.0f, 0.0f, 1.0f };

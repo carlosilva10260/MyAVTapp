@@ -30,6 +30,7 @@ struct SpotLight {
 uniform sampler2D texmap0;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
+uniform sampler2D texmap3;
 uniform PointLight pointLights[6];
 uniform SpotLight spotLights[2];
 uniform DirectionalLight dirLight; 
@@ -120,12 +121,16 @@ void main() {
     }
 
     
-    
     if (texMode == 1) {
         texel = texture(texmap2, DataIn.tex_coord);
         texel1 = texture(texmap1, DataIn.tex_coord);
         colorOut = max(colorOut + intensity*texel*texel1 + spec, mat.ambient);
 		colorOut = vec4(colorOut.rgb, mat.diffuse.a);
     }
-
+	else if (texMode == 2) {
+		texel = texture(texmap3, DataIn.tex_coord); 
+		if(texel.a == 0.0) discard;
+		else
+			colorOut = vec4(max(intensity*texel.rgb + vec3(spec), 0.1*texel.rgb), texel.a);
+	}
 }
