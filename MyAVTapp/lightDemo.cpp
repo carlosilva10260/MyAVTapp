@@ -26,6 +26,9 @@
 
 #include <IL/il.h>
 
+// assimp include files. These three are usually needed.
+#include "assimp/Importer.hpp"	//OO version Header!
+#include "assimp/scene.h"
 
 // Use Very Simple Libs
 #include "VSShaderlib.h"
@@ -34,7 +37,7 @@
 #include "geometry.h"
 #include "Texture_Loader.h"
 #include "l3dBillboard.h"
-
+#include "meshFromAssimp.h"
 #include "avtFreeType.h"
 
 #include "camera.h"
@@ -53,6 +56,12 @@ int WinX = 1024, WinY = 768;
 
 unsigned int FrameCount = 0;
 
+Assimp::Importer importer1;
+const aiScene* scene1;
+float scaleFactor1;
+GLuint* textureIds1;  //for the backpack
+char model_dir[50];
+
 //shaders
 VSShaderLib shader;  //geometry
 VSShaderLib shaderText;  //render bitmap text
@@ -60,6 +69,7 @@ VSShaderLib shaderText;  //render bitmap text
 //File with the font
 const string font_name = "fonts/arial.ttf";
 
+bool normalMapKey = TRUE;
 
 // Boat
 Boat boat;
@@ -100,6 +110,7 @@ int spotON = 1;
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
+vector<struct MyMesh> myMeshes1; //backpack array
 array<BoundingSphere, 3> islandBoundingSpheres;
 vector<struct MyMesh> boatMeshes;
 vector<struct MyMesh> treeMeshes;
@@ -134,6 +145,9 @@ GLint point_loc0, point_loc1, point_loc2, point_loc3, point_loc4, point_loc5;
 GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3;
 GLint dir_loc;
 GLint texMode_uniformId;
+GLint normalMap_loc;
+GLint specularMap_loc;
+GLint diffMapCount_loc;
 
 GLint dir_toggle, point_toggle, spot_toggle, fog_toggle;
 
@@ -456,6 +470,112 @@ static void setupRender() {
 	glUniform1i(fog_toggle, fogON);
 }
 
+void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuint*& textureIds)
+{
+	GLint loc;
+
+	// Get node transformation matrix
+	aiMatrix4x4 m = nd->mTransformation;
+	// OpenGL matrices are column major
+	m.Transpose();
+
+	// save model matrix and apply node transformation
+	pushMatrix(MODEL);
+
+	float aux[16];
+	memcpy(aux, &m, sizeof(float) * 16);
+	multMatrix(MODEL, aux);
+
+
+	// draw all meshes assigned to this node
+	for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
+
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.emissive");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.emissive);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[nd->mMeshes[n]].mat.shininess);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+		glUniform1i(loc, myMeshes[nd->mMeshes[n]].mat.texCount);
+
+		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
+
+		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
+
+		glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
+		glUniform1i(specularMap_loc, false);
+		glUniform1ui(diffMapCount_loc, 0);
+
+		if (myMeshes[nd->mMeshes[n]].mat.texCount != 0)
+			for (unsigned int i = 0; i < myMeshes[nd->mMeshes[n]].mat.texCount; ++i) {
+
+				//Activate a TU with a Texture Object
+				GLuint TU = myMeshes[nd->mMeshes[n]].texUnits[i];
+				glActiveTexture(GL_TEXTURE4 + TU);
+				glBindTexture(GL_TEXTURE_2D, textureIds[TU]);
+
+				if (myMeshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
+					if (diffMapCount == 0) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
+						glUniform1i(loc, TU);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else if (diffMapCount == 1) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
+						glUniform1i(loc, TU);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
+					glUniform1i(loc, TU);
+					glUniform1i(specularMap_loc, true);
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
+					if (normalMapKey)
+						glUniform1i(normalMap_loc, normalMapKey);
+					glUniform1i(loc, TU);
+
+				}
+				else printf("Texture Map not supported\n");
+			}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// bind VAO
+		glBindVertexArray(myMeshes[nd->mMeshes[n]].vao);
+
+		if (!shader.isProgramValid()) {
+			printf("Program Not Valid!\n");
+			exit(1);
+		}
+		// draw
+		glDrawElements(myMeshes[nd->mMeshes[n]].type, myMeshes[nd->mMeshes[n]].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+
+	// draw all children
+	for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
+		aiRecursive_render(nd->mChildren[n], myMeshes, textureIds);
+	}
+	popMatrix(MODEL);
+}
+
 static void sendMaterial(const Material& mat) {
 	GLint loc;
 	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -466,6 +586,8 @@ static void sendMaterial(const Material& mat) {
 	glUniform4fv(loc, 1, mat.specular);
 	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 	glUniform1f(loc, mat.shininess);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+	glUniform1f(loc, mat.texCount);
 }
 
 static void renderFloats() {
@@ -815,6 +937,14 @@ static void renderBoat() {
 
 		popMatrix(MODEL);
 	}
+
+	pushMatrix(MODEL);
+	translate(MODEL, -0.125, 0.6, 0.3);
+	scale(MODEL, scaleFactor1, scaleFactor1, scaleFactor1);
+	translate(MODEL, 0.5, 1.0, 0.0);
+	rotate(MODEL, 180, 0, 1, 0);
+	aiRecursive_render(scene1->mRootNode, myMeshes1, textureIds1);
+	popMatrix(MODEL);
 
 	popMatrix(MODEL);
 }
@@ -1185,6 +1315,9 @@ GLuint setupShaders() {
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
+	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
+	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
+	diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
 
 	point_toggle = glGetUniformLocation(shader.getProgramIndex(), "pointON");
@@ -1254,6 +1387,16 @@ void init()
 	cams[1].setType(1);
 
 	cams[2].setPos({ 4, 16, 4 });
+
+	std::string filepath1 = "backpack/backpack.obj";
+
+	//Import the model obj, a backpack
+	if (!Import3DFromFile(filepath1, importer1, scene1, scaleFactor1)) {
+		exit(0);
+	}
+	strcpy(model_dir, "backpack/");
+	//creation of Mymesh array with VAO Geometry and Material and array of Texture Objs for the backpack model
+	myMeshes1 = createMeshFromAssimp(scene1, textureIds1);
 
 	float h20_amb[] = { 0.0f, 0.0f, 0.25f, 0.7f };
 	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 0.7f };

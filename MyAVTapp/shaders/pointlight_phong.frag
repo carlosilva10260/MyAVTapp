@@ -53,7 +53,7 @@ void main() {
 	vec4 texel, texel1;
 	vec4 result = vec4(0.0);
 	vec4 spec = vec4(0.0);
-
+	
 
 	// Directional Light
 	vec3 n = normalize(DataIn.normal);

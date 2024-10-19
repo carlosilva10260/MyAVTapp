@@ -167,6 +167,7 @@
     <ClCompile Include="GameTime.cpp" />
     <ClCompile Include="l3dBillboard.cpp" />
     <ClCompile Include="lightDemo.cpp" />
+    <ClCompile Include="meshFromAssimp.cpp" />
     <ClCompile Include="redfloat.cpp" />
     <ClCompile Include="Texture_Loader.cpp" />
     <ClCompile Include="vsShaderLib.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="GameTime.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="l3DBillboard.h" />
+    <ClInclude Include="meshFromAssimp.h" />
     <ClInclude Include="redfloat.h" />
     <ClInclude Include="Texture_Loader.h" />
     <ClInclude Include="VertexAttrDef.h" />
