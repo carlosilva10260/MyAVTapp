@@ -132,5 +132,10 @@ void main() {
 		if(texel.a == 0.0) discard;
 		else
 			colorOut = vec4(max(intensity*texel.rgb + vec3(spec), 0.1*texel.rgb), texel.a);
+	} else if (texMode == 3) {
+		texel = texture(texmap0, DataIn.tex_coord);  //texel from element flare texture
+		// if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
+		// else
+			colorOut = mat.diffuse * texel;
 	}
 }
