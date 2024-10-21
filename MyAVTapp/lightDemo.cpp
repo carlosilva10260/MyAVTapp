@@ -173,7 +173,7 @@ GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint spot_pos_loc0, spot_pos_loc1, spot_dir_loc0, spot_dir_loc1, spot_angle_loc0, spot_angle_loc1;
 GLint point_loc0, point_loc1, point_loc2, point_loc3, point_loc4, point_loc5;
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5;
 GLint dir_loc;
 GLint texMode_uniformId;
 GLint normalMap_loc;
@@ -1140,7 +1140,7 @@ void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport) {  //lx, ly
 	// Render each element. To be used Texture Unit 0
 
 	glUniform1i(texMode_uniformId, 3); // draw modulated textured particles 
-	glUniform1i(tex_loc0, 0);  //use TU 0
+	glUniform1i(tex_loc5, 0);  //use TU 0
 
 	for (i = 0; i < flare->nPieces; ++i)
 	{
@@ -1304,14 +1304,47 @@ static void renderScene(void) {
 
 	}
 
-	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
-	glDisable(GL_DEPTH_TEST);
-	//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
+
+
+	int flarePos[2];
 	int m_viewport[4];
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
 
-	pushMatrix(MODEL);
-	loadIdentity(MODEL);
+	for (int i = 0; i < 6; ++i) {
+		pushMatrix(MODEL);
+		loadIdentity(MODEL);
+		computeDerivedMatrix(PROJ_VIEW_MODEL);  //pvm to be applied to lightPost. pvm is used in project function
+
+		if (!project(pointLightPos[i], lightScreenPos, m_viewport))
+			printf("Error in getting projected light in screen\n");  //Calculate the window Coordinates of the light position: the projected position of light on viewport
+		flarePos[0] = clampi((int)lightScreenPos[0], m_viewport[0], m_viewport[0] + m_viewport[2] - 1);
+		flarePos[1] = clampi((int)lightScreenPos[1], m_viewport[1], m_viewport[1] + m_viewport[3] - 1);
+		popMatrix(MODEL);
+
+		//viewer looking down at  negative z direction
+		pushMatrix(PROJECTION);
+		loadIdentity(PROJECTION);
+		pushMatrix(VIEW);
+		loadIdentity(VIEW);
+		ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
+		if (flareEffect) {
+			render_flare(&AVTflare, flarePos[0], flarePos[1], m_viewport);
+		}
+		popMatrix(PROJECTION);
+		popMatrix(VIEW);
+	}
+
+	
+
+
+
+	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
+
+
 	pushMatrix(PROJECTION);
 	loadIdentity(PROJECTION);
 	pushMatrix(VIEW);
@@ -1332,38 +1365,11 @@ static void renderScene(void) {
 	}
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
-	popMatrix(MODEL);
 
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
-	if (flareEffect) {
-		int flarePos[2];
-		int m_viewport[4];
-		glGetIntegerv(GL_VIEWPORT, m_viewport);
-
-		for (int i = 0; i < 6; ++i) {
-			pushMatrix(MODEL);
-			loadIdentity(MODEL);
-			computeDerivedMatrix(PROJ_VIEW_MODEL);  //pvm to be applied to lightPost. pvm is used in project function
-
-			if (!project(pointLightPos[i], lightScreenPos, m_viewport))
-				printf("Error in getting projected light in screen\n");  //Calculate the window Coordinates of the light position: the projected position of light on viewport
-			flarePos[0] = clampi((int)lightScreenPos[0], m_viewport[0], m_viewport[0] + m_viewport[2] - 1);
-			flarePos[1] = clampi((int)lightScreenPos[1], m_viewport[1], m_viewport[1] + m_viewport[3] - 1);
-			popMatrix(MODEL);
-
-			//viewer looking down at  negative z direction
-			pushMatrix(PROJECTION);
-			loadIdentity(PROJECTION);
-			pushMatrix(VIEW);
-			loadIdentity(VIEW);
-			ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-			render_flare(&AVTflare, flarePos[0], flarePos[1], m_viewport);
-			popMatrix(PROJECTION);
-			popMatrix(VIEW);
-		}
-	}
+	
 
 
 
@@ -1631,6 +1637,7 @@ GLuint setupShaders() {
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
+	tex_loc5 = glGetUniformLocation(shader.getProgramIndex(), "texmap5");
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
 	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
 	diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");

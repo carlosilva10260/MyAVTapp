@@ -32,6 +32,7 @@ uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 uniform sampler2D texmap3;
 uniform sampler2D texmap4;
+uniform sampler2D texmap5;
 uniform PointLight pointLights[6];
 uniform SpotLight spotLights[2];
 uniform DirectionalLight dirLight; 
@@ -134,9 +135,9 @@ void main() {
 		else
 			colorOut = vec4(max(intensity*texel.rgb + vec3(spec), 0.1*texel.rgb), texel.a);
 	} else if (texMode == 3) {
-		texel = texture(texmap0, DataIn.tex_coord);  //texel from element flare texture
-		// if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
-		// else
+		texel = texture(texmap5, DataIn.tex_coord);  //texel from element flare texture
+		if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
+		else
 			colorOut = mat.diffuse * texel;
 	} else if (texMode == 4) {
 		texel = texture(texmap4, DataIn.tex_coord);
