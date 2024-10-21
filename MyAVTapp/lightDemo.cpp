@@ -195,6 +195,12 @@ int deltaMove = 0, deltaUp = 0, type = 0;
 int activeCamera = 0;
 Camera cams[3];
 
+// Text coords
+float livesX = 10.0f;
+float livesY = 728.0f;
+float timeX = 700.0f;
+float timeY = 728.0f;
+
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
 
@@ -416,6 +422,8 @@ void refresh(int value)
 //
 
 void changeSize(int w, int h) {
+	const int initialW = 1024;
+	const int initialH = 768;
 
 	float ratio;
 	// Prevent a divide by zero, when window is too short
@@ -433,6 +441,14 @@ void changeSize(int w, int h) {
 	else {
 		perspective(53.13f, ratio, 1.0f, 1000.0f);
 	}
+
+	int wDiff = w - initialW;
+	int hDiff = h - initialH;
+
+	livesX = std::max(10.0f + wDiff, 0.0f);
+	livesY = 728.0f + hDiff;
+	timeX = std::max(700.0f + wDiff, 0.0f);
+	timeY = 728.0f + hDiff;
 }
 
 
@@ -1301,8 +1317,8 @@ static void renderScene(void) {
 	pushMatrix(VIEW);
 	loadIdentity(VIEW);
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-	RenderText(shaderText, "Lives: " + std::to_string(lives), 10.0f, 728.0f, 0.8f, 1.0f, 1.0f, 1.0f);
-	RenderText(shaderText, "Time: " + elapsedTime.formatTime(), 700.0f, 728.0f, 0.8f, 1.0f, 1.0f, 1.0f);
+	RenderText(shaderText, "Lives: " + std::to_string(lives), livesX, livesY, 0.8f, 1.0f, 1.0f, 1.0f);
+	RenderText(shaderText, "Time: " + elapsedTime.formatTime(), timeX, timeY, 0.8f, 1.0f, 1.0f, 1.0f);
 	if (paused) {
 		RenderText(shaderText, "Pause! Press 'P' to unpause.", 500.0f, 300.0f, 0.8f, 1.0f, 1.0f, 1.0f);
 	}
