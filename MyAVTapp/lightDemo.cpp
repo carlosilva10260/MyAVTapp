@@ -57,6 +57,11 @@ using std::vector;
 using std::pair;
 
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
+#define frand()			((float)rand()/RAND_MAX)
+#define M_PI			3.14159265
+#define MAX_PARTICULAS  1500
+
+
 int WindowHandle = 0;
 int WinX = 1024, WinY = 768;
 
@@ -82,6 +87,24 @@ Boat boat;
 int aKey = 0;
 int dKey = 0;
 int sKey = 0;
+
+
+//Firework
+
+typedef struct {
+	float	life;		// vida
+	float	fade;		// fade
+	float	r, g, b;    // color
+	GLfloat x, y, z;    // posi‹o
+	GLfloat vx, vy, vz; // velocidade 
+	GLfloat ax, ay, az; // acelera‹o
+} Particle;
+
+Particle particula[MAX_PARTICULAS];
+int dead_num_particles = 0;
+int fireworks = 0;
+
+
 
 // Lights
 
@@ -117,6 +140,7 @@ int spotON = 1;
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
 vector<struct MyMesh> flareMeshes;
+vector<struct MyMesh> particleMeshes;
 vector<struct MyMesh> myMeshes1; //backpack array
 array<BoundingSphere, 3> islandBoundingSpheres;
 vector<struct MyMesh> boatMeshes;
@@ -149,7 +173,7 @@ GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint spot_pos_loc0, spot_pos_loc1, spot_dir_loc0, spot_dir_loc1, spot_angle_loc0, spot_angle_loc1;
 GLint point_loc0, point_loc1, point_loc2, point_loc3, point_loc4, point_loc5;
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4;
 GLint dir_loc;
 GLint texMode_uniformId;
 GLint normalMap_loc;
@@ -158,7 +182,7 @@ GLint diffMapCount_loc;
 
 GLint dir_toggle, point_toggle, spot_toggle, fog_toggle;
 
-GLuint TextureArray[4];
+GLuint TextureArray[5];
 GLuint FlareTextureArray[5];
 
 FLARE_DEF AVTflare;
@@ -234,6 +258,63 @@ static void restartGame() {
 	lives = 5;
 }
 
+void updateParticles()
+{
+	int i;
+	float h;
+
+	/* Método de Euler de integração de eq. diferenciais ordinárias
+	h representa o step de tempo; dv/dt = a; dx/dt = v; e conhecem-se os valores iniciais de x e v */
+
+	//h = 0.125f;
+	h = 0.033;
+	if (fireworks) {
+
+		for (i = 0; i < MAX_PARTICULAS; i++)
+		{
+			particula[i].x += (h * particula[i].vx);
+			particula[i].y += (h * particula[i].vy);
+			particula[i].z += (h * particula[i].vz);
+			particula[i].vx += (h * particula[i].ax);
+			particula[i].vy += (h * particula[i].ay);
+			particula[i].vz += (h * particula[i].az);
+			particula[i].life -= particula[i].fade;
+		}
+	}
+}
+
+void iniParticles(void)
+{
+	GLfloat v, theta, phi;
+	int i;
+
+	for (i = 0; i < MAX_PARTICULAS; i++)
+	{
+		v = 0.8 * frand() + 0.2;
+		phi = frand() * M_PI;
+		theta = 2.0 * frand() * M_PI;
+
+		particula[i].x = floats[6].pos[0];
+		particula[i].y = floats[6].pos[1] + 2.0f;
+		particula[i].z = floats[6].pos[2];
+		particula[i].vx = v * cos(theta) * sin(phi);
+		particula[i].vy = v * cos(phi);
+		particula[i].vz = v * sin(theta) * sin(phi);
+		particula[i].ax = 0.1f; /* simular um pouco de vento */
+		particula[i].ay = -0.15f; /* simular a aceleração da gravidade */
+		particula[i].az = 0.0f;
+
+		/* tom amarelado que vai ser multiplicado pela textura que varia entre branco e preto */
+		particula[i].r = 0.882f;
+		particula[i].g = 0.552f;
+		particula[i].b = 0.211f;
+
+		particula[i].life = 1.0f;		/* vida inicial */
+		particula[i].fade = 0.0025f;	    /* step de decréscimo da vida para cada iteração */
+	}
+}
+
+
 void timer(int value)
 {
 	if (!paused && !restart) {
@@ -264,7 +345,8 @@ pair<CollisionType, int> isBoatColliding() {
 	for (int i = 0; i < 7; i++) {
 		if (AABB::isColliding(floats[i].getFloatAABB(), boat.getBoatAABB())) {
 			if (floats[i].yellow) {
-				goal_flag = true;
+				fireworks = 1;
+				iniParticles();
 			}
 			printf("before %f %f %f\n", floats[i].pos[0], floats[i].pos[1], floats[i].pos[2]);
 			return { RED_FLOAT, i };
@@ -281,6 +363,10 @@ pair<CollisionType, int> isBoatColliding() {
 
 	return { NONE, 0 };
 }
+
+
+
+
 
 void refresh(int value)
 {
@@ -431,11 +517,15 @@ static void setupRender() {
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
 
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
+	glUniform1i(tex_loc4, 4);
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -1093,6 +1183,10 @@ static void renderScene(void) {
 	renderCreatures();
 	renderBoat();
 
+
+	float particle_color[4];
+	GLint loc;
+
 	for (int j = 1; j < 4; ++j) {
 		// send the material
 		sendMaterial(myMeshes[j].mat);
@@ -1130,6 +1224,69 @@ static void renderScene(void) {
 	}
 
 	renderWater();
+
+	if (fireworks) {
+
+		updateParticles();
+
+		// draw fireworks particles
+
+		glBindTexture(GL_TEXTURE_2D, TextureArray[4]); //particle.tga associated to TU0 
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glDepthMask(GL_FALSE);  //Depth Buffer Read Only
+
+		glUniform1i(texMode_uniformId, 4); // draw modulated textured particles 
+
+		for (int i = 0; i < MAX_PARTICULAS; i++)
+		{
+			if (particula[i].life > 0.0f) /* só desenha as que ainda estão vivas */
+			{
+
+				/* A vida da partícula representa o canal alpha da cor. Como o blend está activo a cor final é a soma da cor rgb do fragmento multiplicada pelo
+				alpha com a cor do pixel destino */
+
+				particle_color[0] = particula[i].r;
+				particle_color[1] = particula[i].g;
+				particle_color[2] = particula[i].b;
+				particle_color[3] = particula[i].life;
+
+				// send the material - diffuse color modulated with texture
+				loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+				glUniform4fv(loc, 1, particle_color);
+
+				pushMatrix(MODEL);
+				translate(MODEL, particula[i].x, particula[i].y, particula[i].z);
+				if (floats[6].pos[0] < 0.0f) {
+					rotate(MODEL, 90, 0.0f, 1.0f, 0.0f);
+				}
+
+				// send matrices to OGL
+				computeDerivedMatrix(PROJ_VIEW_MODEL);
+				glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+				glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+				computeNormalMatrix3x3();
+				glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+				glBindVertexArray(particleMeshes[0].vao);
+				glDrawElements(particleMeshes[0].type, particleMeshes[0].numIndexes, GL_UNSIGNED_INT, 0);
+				popMatrix(MODEL);
+			}
+			else dead_num_particles++;
+		}
+
+		glDepthMask(GL_TRUE); //make depth buffer again writeable
+
+		if (dead_num_particles == MAX_PARTICULAS) {
+			fireworks = 0;
+			dead_num_particles = 0;
+			goal_flag = true;
+			printf("All particles dead\n");
+		}
+
+	}
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -1191,6 +1348,12 @@ static void renderScene(void) {
 			popMatrix(VIEW);
 		}
 	}
+
+
+
+
+	
+
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
@@ -1306,6 +1469,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'H': case 'h':
 		//Toggle spot lights
+
 		if (spotON == 1) {
 			spotON = 0;
 		}
@@ -1450,6 +1614,7 @@ GLuint setupShaders() {
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
+	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
 	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
 	diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");
@@ -1500,11 +1665,12 @@ void init()
 
 	//Texture Object definition
 
-	glGenTextures(3, TextureArray);
+	glGenTextures(5, TextureArray);
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "water_quad.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "tree.tga", 3);
+	Texture2D_Loader(TextureArray, "particle.tga", 4);
 
 	//Flare elements textures
 	glGenTextures(5, FlareTextureArray);
@@ -1758,6 +1924,13 @@ void init()
 
 	//Load flare from file
 	loadFlareFile(&AVTflare, "flare.txt");
+
+	// create geometry and VAO of the quad for particles
+	amesh = createQuad(2, 2);
+	amesh.mat.texCount = texcount;
+	particleMeshes.push_back(amesh);
+
+
 
 	goal_position();
 

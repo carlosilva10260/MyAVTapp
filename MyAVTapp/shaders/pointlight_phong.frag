@@ -31,6 +31,7 @@ uniform sampler2D texmap0;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 uniform sampler2D texmap3;
+uniform sampler2D texmap4;
 uniform PointLight pointLights[6];
 uniform SpotLight spotLights[2];
 uniform DirectionalLight dirLight; 
@@ -137,5 +138,11 @@ void main() {
 		// if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
 		// else
 			colorOut = mat.diffuse * texel;
+	} else if (texMode == 4) {
+		texel = texture(texmap4, DataIn.tex_coord);
+		if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
+		else
+			colorOut = mat.diffuse * texel;
 	}
+
 }
