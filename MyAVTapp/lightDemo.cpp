@@ -1189,6 +1189,21 @@ void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport) {  //lx, ly
 	glDisable(GL_BLEND);
 }
 
+
+
+float dotProduct(const float* vec1, const float* vec2) {
+	return vec1[0] * vec2[0] + vec1[1] * vec2[1] + vec1[2] * vec2[2];
+}
+float magnitude(const float* vec) {
+	return std::sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
+}
+float angleBetweenVectors(const float* vec1, const float* vec2) {
+	float dot = dotProduct(vec1, vec2);
+	float mag1 = magnitude(vec1);
+	float mag2 = magnitude(vec2);
+	return std::acos(dot / (mag1 * mag2));
+}
+
 static void renderScene(void) {	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1310,29 +1325,31 @@ static void renderScene(void) {
 	int m_viewport[4];
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
 
-	for (int i = 0; i < 6; ++i) {
-		pushMatrix(MODEL);
-		loadIdentity(MODEL);
-		computeDerivedMatrix(PROJ_VIEW_MODEL);  //pvm to be applied to lightPost. pvm is used in project function
+	pushMatrix(MODEL);
+	loadIdentity(MODEL);
+	computeDerivedMatrix(PROJ_VIEW_MODEL);  //pvm to be applied to lightPost. pvm is used in project function
 
-		if (!project(pointLightPos[i], lightScreenPos, m_viewport))
-			printf("Error in getting projected light in screen\n");  //Calculate the window Coordinates of the light position: the projected position of light on viewport
-		flarePos[0] = clampi((int)lightScreenPos[0], m_viewport[0], m_viewport[0] + m_viewport[2] - 1);
-		flarePos[1] = clampi((int)lightScreenPos[1], m_viewport[1], m_viewport[1] + m_viewport[3] - 1);
-		popMatrix(MODEL);
+	if (!project(pointLightPos[0], lightScreenPos, m_viewport))
+		printf("Error in getting projected light in screen\n");  //Calculate the window Coordinates of the light position: the projected position of light on viewport
+	flarePos[0] = clampi((int)lightScreenPos[0], m_viewport[0], m_viewport[0] + m_viewport[2] - 1);
+	flarePos[1] = clampi((int)lightScreenPos[1], m_viewport[1], m_viewport[1] + m_viewport[3] - 1);
+	popMatrix(MODEL);
 
-		//viewer looking down at  negative z direction
-		pushMatrix(PROJECTION);
-		loadIdentity(PROJECTION);
-		pushMatrix(VIEW);
-		loadIdentity(VIEW);
-		ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-		if (flareEffect) {
-			render_flare(&AVTflare, flarePos[0], flarePos[1], m_viewport);
-		}
-		popMatrix(PROJECTION);
-		popMatrix(VIEW);
+	//viewer looking down at  negative z direction
+	pushMatrix(PROJECTION);
+	loadIdentity(PROJECTION);
+	pushMatrix(VIEW);
+	loadIdentity(VIEW);
+	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
+
+	float camDir[3] = { cams[activeCamera].getTarget()[0] - cams[activeCamera].getPos()[0], cams[activeCamera].getTarget()[1] - cams[activeCamera].getPos()[1], cams[activeCamera].getTarget()[2] - cams[activeCamera].getPos()[2] };
+	float lightDir[3] = { pointLightPos[0][0] - cams[activeCamera].getPos()[0], pointLightPos[0][1] - cams[activeCamera].getPos()[1], pointLightPos[0][2] - cams[activeCamera].getPos()[2] };
+	float angle = angleBetweenVectors(camDir, lightDir);
+	if (pointON && !spotON && angle < M_PI / 2) {
+		render_flare(&AVTflare, flarePos[0], flarePos[1], m_viewport);
 	}
+	popMatrix(PROJECTION);
+	popMatrix(VIEW);
 
 	
 
@@ -1936,10 +1953,14 @@ void init()
 	floats[numOfFloats] = Redfloat();
 
 	// create geometry and VAO of the quad for flare elements
-	amesh = createQuad(10, 10);
-	memcpy(amesh.mat.ambient, goal_amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, goal_diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, goal_spec, 4 * sizeof(float));
+	float flare_amb[] = { 0.75f, 0.75f, 0.75f, 1.0f };  
+	float flare_diff[] = { 0.75f, 0.75f, 0.75f, 1.0f }; 
+	float flare_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+
+	amesh = createQuad(1, 1);
+	memcpy(amesh.mat.ambient, flare_amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, flare_diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, flare_spec, 4 * sizeof(float));
 	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
