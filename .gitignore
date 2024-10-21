@@ -79,6 +79,7 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+!MyAVTApp/backpack/backpack.obj
 *.iobj
 *.pch
 *.pdb
