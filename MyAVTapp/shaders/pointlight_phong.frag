@@ -33,6 +33,7 @@ uniform sampler2D texmap2;
 uniform sampler2D texmap3;
 uniform sampler2D texmap4;
 uniform sampler2D texmap5;
+uniform samplerCube cubeMap;
 uniform PointLight pointLights[6];
 uniform SpotLight spotLights[2];
 uniform DirectionalLight dirLight; 
@@ -49,13 +50,13 @@ in Data {
 	vec3 eye;
 	vec3 lightDir;
 	vec2 tex_coord;
+	vec3 skyboxtex_coord;
 } DataIn;
 
 void main() {
 	vec4 texel, texel1;
 	vec4 result = vec4(0.0);
 	vec4 spec = vec4(0.0);
-	
 
 	// Directional Light
 	vec3 n = normalize(DataIn.normal);
@@ -144,6 +145,8 @@ void main() {
 		if((texel.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
 		else
 			colorOut = mat.diffuse * texel;
+	} else if (texMode == 5) { //SkyBox
+		colorOut = texture(cubeMap, DataIn.skyboxtex_coord);
 	}
 
 }
