@@ -550,11 +550,74 @@ static void setupRender() {
 
 		lookAt(camX, camY, camZ, targetX, targetY, targetZ, 0, 1, 0);
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[6]);
+
+
+		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+		glUniform1i(tex_loc0, 0);
+		glUniform1i(tex_loc1, 1);
+		glUniform1i(tex_loc2, 2);
+		glUniform1i(tex_loc3, 3);
+		glUniform1i(tex_loc4, 4);
+		glUniform1i(tex_normalMap_loc, 5);
+		glUniform1i(tex_cube_loc, 6);
+
+
 		renderSkybox();
 		renderTree();
 		renderFloats();
 		renderCreatures();
 		renderBoat();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[6]);
+
+
+		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+		glUniform1i(tex_loc0, 0);
+		glUniform1i(tex_loc1, 1);
+		glUniform1i(tex_loc2, 2);
+		glUniform1i(tex_loc3, 3);
+		glUniform1i(tex_loc4, 4);
+		glUniform1i(tex_normalMap_loc, 5);
+		glUniform1i(tex_cube_loc, 6);
 
 
 		renderIslands();
