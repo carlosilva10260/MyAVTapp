@@ -139,6 +139,7 @@ int spotON = 1;
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
+vector<struct MyMesh> skyMesh;
 vector<struct MyMesh> flareMeshes;
 vector<struct MyMesh> particleMeshes;
 vector<struct MyMesh> myMeshes1; //backpack array
@@ -173,12 +174,18 @@ GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint spot_pos_loc0, spot_pos_loc1, spot_dir_loc0, spot_dir_loc1, spot_angle_loc0, spot_angle_loc1;
 GLint point_loc0, point_loc1, point_loc2, point_loc3, point_loc4, point_loc5;
+<<<<<<< HEAD
 GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5, tex_normalMap_loc;
+=======
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5, tex_cube_loc;
+>>>>>>> 1724b4e696908f30b5ca39809c162a453f01742e
 GLint dir_loc;
 GLint texMode_uniformId;
 GLint normalMap_loc;
 GLint specularMap_loc;
 GLint diffMapCount_loc;
+GLint view_uniformId;
+GLint model_uniformId;
 
 GLint dir_toggle, point_toggle, spot_toggle, fog_toggle;
 
@@ -542,7 +549,11 @@ static void setupRender() {
 	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
 
 	glActiveTexture(GL_TEXTURE5);
+<<<<<<< HEAD
 	glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+=======
+	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[5]);
+>>>>>>> 1724b4e696908f30b5ca39809c162a453f01742e
 
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc0, 0);
@@ -550,7 +561,11 @@ static void setupRender() {
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
 	glUniform1i(tex_loc4, 4);
+<<<<<<< HEAD
 	glUniform1i(tex_normalMap_loc, 5);
+=======
+	glUniform1i(tex_cube_loc, 5);
+>>>>>>> 1724b4e696908f30b5ca39809c162a453f01742e
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -1221,11 +1236,47 @@ float angleBetweenVectors(const float* vec1, const float* vec2) {
 	return std::acos(dot / (mag1 * mag2));
 }
 
+static void renderSkybox(void) {
+	glUniform1i(texMode_uniformId, 5);
+
+	glDepthMask(GL_FALSE);
+	glFrontFace(GL_CW);
+
+	pushMatrix(MODEL);
+	pushMatrix(VIEW);  //se quiser anular a translação
+
+	//  Fica mais realista se não anular a translação da câmara 
+	// Cancel the translation movement of the camera - de acordo com o tutorial do Antons
+	mMatrix[VIEW][12] = 0.0f;
+	mMatrix[VIEW][13] = 0.0f;
+	mMatrix[VIEW][14] = 0.0f;
+
+	scale(MODEL, 100.0f, 100.0f, 100.0f);
+	translate(MODEL, -0.5f, -0.5f, -0.5f);
+
+	// send matrices to OGL
+	glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]); //Transformação de modelação do cubo unitário para o "Big Cube"
+	computeDerivedMatrix(PROJ_VIEW_MODEL);
+	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+
+	glBindVertexArray(skyMesh[0].vao);
+	glDrawElements(skyMesh[0].type, skyMesh[0].numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+	popMatrix(MODEL);
+	popMatrix(VIEW);
+
+	glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the 
+	glDepthMask(GL_TRUE);
+	glUniform1i(texMode_uniformId, 0);
+
+}
+
 static void renderScene(void) {	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	setupRender();
 
+	renderSkybox();
 	renderTree();
 	renderFloats();
 	renderCreatures();
@@ -1685,7 +1736,7 @@ GLuint setupShaders() {
 	if (!shader.isProgramValid()) {
 		printf("GLSL Model Program Not Valid!\n");
 		printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
-		exit(1);
+		//exit(1);
 	}
 
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
@@ -1711,11 +1762,17 @@ GLuint setupShaders() {
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
 	tex_loc5 = glGetUniformLocation(shader.getProgramIndex(), "texmap5");
+<<<<<<< HEAD
 	tex_normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap2");
+=======
+	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
+>>>>>>> 1724b4e696908f30b5ca39809c162a453f01742e
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
 	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
 	diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
+	model_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_Model");
+	view_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_View");
 
 	point_toggle = glGetUniformLocation(shader.getProgramIndex(), "pointON");
 	dir_toggle = glGetUniformLocation(shader.getProgramIndex(), "dirON");
@@ -1762,7 +1819,7 @@ void init()
 
 	//Texture Object definition
 
-	glGenTextures(5, TextureArray);
+	glGenTextures(6, TextureArray);
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "water_quad.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
@@ -1778,6 +1835,10 @@ void init()
 	Texture2D_Loader(FlareTextureArray, "hxgn.tga", 2);
 	Texture2D_Loader(FlareTextureArray, "ring.tga", 3);
 	Texture2D_Loader(FlareTextureArray, "sun.tga", 4);
+
+	const char* filenames[] = { "posx.jpg", "negx.jpg", "posy.jpg", "negy.jpg", "posz.jpg", "negz.jpg" };
+
+	TextureCubeMap_Loader(TextureArray, filenames, 5);
 
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name);
@@ -2026,6 +2087,21 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	flareMeshes.push_back(amesh);
+
+	//skybox
+
+	float sky_amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
+	float sky_diff[] = { 0.8f, 0.6f, 0.4f, 1.0f };
+	float sky_spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, sky_amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, sky_diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, sky_spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = 100;
+	amesh.mat.texCount = texcount;
+	skyMesh.push_back(amesh);
 
 	//Load flare from file
 	loadFlareFile(&AVTflare, "flare.txt");
