@@ -174,11 +174,7 @@ GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint spot_pos_loc0, spot_pos_loc1, spot_dir_loc0, spot_dir_loc1, spot_angle_loc0, spot_angle_loc1;
 GLint point_loc0, point_loc1, point_loc2, point_loc3, point_loc4, point_loc5;
-<<<<<<< HEAD
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5, tex_normalMap_loc;
-=======
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5, tex_cube_loc;
->>>>>>> 1724b4e696908f30b5ca39809c162a453f01742e
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5, tex_normalMap_loc, tex_cube_loc;
 GLint dir_loc;
 GLint texMode_uniformId;
 GLint normalMap_loc;
@@ -189,7 +185,7 @@ GLint model_uniformId;
 
 GLint dir_toggle, point_toggle, spot_toggle, fog_toggle;
 
-GLuint TextureArray[6];
+GLuint TextureArray[7];
 GLuint FlareTextureArray[5];
 
 FLARE_DEF AVTflare;
@@ -549,11 +545,11 @@ static void setupRender() {
 	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
 
 	glActiveTexture(GL_TEXTURE5);
-<<<<<<< HEAD
 	glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
-=======
-	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[5]);
->>>>>>> 1724b4e696908f30b5ca39809c162a453f01742e
+
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[6]);
+
 
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc0, 0);
@@ -561,11 +557,9 @@ static void setupRender() {
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
 	glUniform1i(tex_loc4, 4);
-<<<<<<< HEAD
 	glUniform1i(tex_normalMap_loc, 5);
-=======
-	glUniform1i(tex_cube_loc, 5);
->>>>>>> 1724b4e696908f30b5ca39809c162a453f01742e
+	glUniform1i(tex_cube_loc, 6);
+
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -1237,7 +1231,7 @@ float angleBetweenVectors(const float* vec1, const float* vec2) {
 }
 
 static void renderSkybox(void) {
-	glUniform1i(texMode_uniformId, 5);
+	glUniform1i(texMode_uniformId, 6);
 
 	glDepthMask(GL_FALSE);
 	glFrontFace(GL_CW);
@@ -1300,6 +1294,8 @@ static void renderScene(void) {
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
 
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[6]);
 	
 
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
@@ -1309,6 +1305,7 @@ static void renderScene(void) {
 	glUniform1i(tex_loc3, 3);
 	glUniform1i(tex_loc4, 4);
 	glUniform1i(tex_normalMap_loc, 5);
+	glUniform1i(tex_cube_loc, 6);
 
 
 	float particle_color[4];
@@ -1762,11 +1759,8 @@ GLuint setupShaders() {
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
 	tex_loc5 = glGetUniformLocation(shader.getProgramIndex(), "texmap5");
-<<<<<<< HEAD
 	tex_normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap2");
-=======
 	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
->>>>>>> 1724b4e696908f30b5ca39809c162a453f01742e
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
 	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
 	diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");

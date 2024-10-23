@@ -189,13 +189,9 @@ void main() {
 		texel = texture(texmap4, DataIn.tex_coord);
 		if((texel.a == 0.0)  || (diff.a == 0.0) ) discard;
 		else
-<<<<<<< HEAD
 			colorOut = diff * texel;
-=======
-			colorOut = mat.diffuse * texel;
-	} else if (texMode == 5) { //SkyBox
+	} else if (texMode == 6) { //SkyBox
 		colorOut = texture(cubeMap, DataIn.skyboxtex_coord);
->>>>>>> 1724b4e696908f30b5ca39809c162a453f01742e
 	}
 
 }
