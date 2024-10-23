@@ -173,7 +173,7 @@ GLint normal_uniformId;
 GLint lPos_uniformId;
 GLint spot_pos_loc0, spot_pos_loc1, spot_dir_loc0, spot_dir_loc1, spot_angle_loc0, spot_angle_loc1;
 GLint point_loc0, point_loc1, point_loc2, point_loc3, point_loc4, point_loc5;
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5, tex_normalMap_loc;
 GLint dir_loc;
 GLint texMode_uniformId;
 GLint normalMap_loc;
@@ -182,7 +182,7 @@ GLint diffMapCount_loc;
 
 GLint dir_toggle, point_toggle, spot_toggle, fog_toggle;
 
-GLuint TextureArray[5];
+GLuint TextureArray[6];
 GLuint FlareTextureArray[5];
 
 FLARE_DEF AVTflare;
@@ -190,6 +190,11 @@ float lightScreenPos[3];  //Position of the light in Window Coordinates
 bool flareEffect = true;
 
 int deltaMove = 0, deltaUp = 0, type = 0;
+
+
+
+//bump mapping 
+int bumpmapping = 0;
 
 // Camera Position
 int activeCamera = 0;
@@ -536,12 +541,16 @@ static void setupRender() {
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
 
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
 	glUniform1i(tex_loc4, 4);
+	glUniform1i(tex_normalMap_loc, 5);
 
 	//send the light position in eye coordinates
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
@@ -643,7 +652,7 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 
 				//Activate a TU with a Texture Object
 				GLuint TU = myMeshes[nd->mMeshes[n]].texUnits[i];
-				glActiveTexture(GL_TEXTURE4 + TU);
+				glActiveTexture(GL_TEXTURE1 + TU);
 				glBindTexture(GL_TEXTURE_2D, textureIds[TU]);
 
 				if (myMeshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
@@ -698,7 +707,9 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 	// draw all children
 	for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
 		aiRecursive_render(nd->mChildren[n], myMeshes, textureIds);
+
 	}
+
 	popMatrix(MODEL);
 }
 
@@ -912,8 +923,12 @@ void renderTree() {
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glUniform1i(texMode_uniformId, 2); // draw textured quads
+	if (bumpmapping) {
+		glUniform1i(texMode_uniformId, 5);
+	}
+	else {
+		glUniform1i(texMode_uniformId, 2); // draw textured quads
+	}
 
 	for (int i = -4; i < 4; i++) {
 		for (int j = -4; j < 4; j++) {
@@ -1070,6 +1085,7 @@ static void renderBoat() {
 	translate(MODEL, 0.5, 1.0, 0.0);
 	rotate(MODEL, 180, 0, 1, 0);
 	aiRecursive_render(scene1->mRootNode, myMeshes1, textureIds1);
+	glUniform1i(diffMapCount_loc, 0);
 	popMatrix(MODEL);
 
 	popMatrix(MODEL);
@@ -1077,9 +1093,10 @@ static void renderBoat() {
 
 static void renderWater(void) {
 	glDepthMask(GL_FALSE);
+	//myMeshes[0].mat.texCount = 0;
+
 	sendMaterial(myMeshes[0].mat);
 	pushMatrix(MODEL);
-
 	rotate(MODEL, -90, 1, 0, 0);
 	glUniform1i(texMode_uniformId, 1);
 
@@ -1213,6 +1230,34 @@ static void renderScene(void) {
 	renderFloats();
 	renderCreatures();
 	renderBoat();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
+	
+
+	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+	glUniform1i(tex_loc0, 0);
+	glUniform1i(tex_loc1, 1);
+	glUniform1i(tex_loc2, 2);
+	glUniform1i(tex_loc3, 3);
+	glUniform1i(tex_loc4, 4);
+	glUniform1i(tex_normalMap_loc, 5);
 
 
 	float particle_color[4];
@@ -1430,11 +1475,11 @@ void processKeys(unsigned char key, int xx, int yy)
 	if (key == 'p' || key == 'P') {
 		paused = !paused;
 	}
-	
+
 	if (paused) return;
 
 	// From here, only when the game is unpaused we will handle the keypress
-	
+
 	switch (key) {
 
 	case 27:
@@ -1523,6 +1568,15 @@ void processKeys(unsigned char key, int xx, int yy)
 		}
 		else {
 			fogON = 1;
+		}
+		break;
+	case 'B': case 'b':
+		//Toggle bump mapping
+		if (bumpmapping == 1) {
+			bumpmapping = 0;
+		}
+		else {
+			bumpmapping = 1;
 		}
 		break;
 	}
@@ -1622,6 +1676,8 @@ GLuint setupShaders() {
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
 	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TANGENT_ATTRIB, "tangent");
+	glBindAttribLocation(shader.getProgramIndex(), BITANGENT_ATTRIB, "bitangent");
 
 	glLinkProgram(shader.getProgramIndex());
 	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
@@ -1655,6 +1711,7 @@ GLuint setupShaders() {
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
 	tex_loc5 = glGetUniformLocation(shader.getProgramIndex(), "texmap5");
+	tex_normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap2");
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
 	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
 	diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");
@@ -1711,6 +1768,8 @@ void init()
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "tree.tga", 3);
 	Texture2D_Loader(TextureArray, "particle.tga", 4);
+	Texture2D_Loader(TextureArray, "normal.tga", 5);
+
 
 	//Flare elements textures
 	glGenTextures(5, FlareTextureArray);
@@ -1728,15 +1787,6 @@ void init()
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camY = r * sin(beta * 3.14f / 180.0f);*/
 
-	cams[0].setPos({ 0, 200, 0 });
-	cams[0].setUp({ 0, 0, 1 });
-
-	cams[1].setPos({ 0, 150, 0 });	
-	cams[1].setUp({ 0, 0, 1 });
-	cams[1].setType(1);
-
-	cams[2].setPos({ 4, 16, 4 });
-
 	std::string filepath1 = "backpack/backpack.obj";
 
 	//Import the model obj, a backpack
@@ -1746,6 +1796,17 @@ void init()
 	strcpy(model_dir, "backpack/");
 	//creation of Mymesh array with VAO Geometry and Material and array of Texture Objs for the backpack model
 	myMeshes1 = createMeshFromAssimp(scene1, textureIds1);
+
+	cams[0].setPos({ 0, 200, 0 });
+	cams[0].setUp({ 0, 0, 1 });
+
+	cams[1].setPos({ 0, 150, 0 });	
+	cams[1].setUp({ 0, 0, 1 });
+	cams[1].setType(1);
+
+	cams[2].setPos({ 4, 16, 4 });
+
+	
 
 	float h20_amb[] = { 0.0f, 0.0f, 0.25f, 0.7f };
 	float h20_diff[] = { 0.1f, 0.1f, 0.8f, 0.7f };
