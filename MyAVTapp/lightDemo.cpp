@@ -1326,6 +1326,7 @@ static void renderScene(void) {
 			islandBoundingSpheres[1] = BoundingSphere(60.0f, 0.0f, -45.0f, 8.0f);
 		}
 		else if (j == 3) { //medium island #2
+			glUniform1i(texMode_uniformId, 6); //cube mapping
 			translate(MODEL, -50.0f, 0.0f, 0.0f);
 			islandBoundingSpheres[2] = BoundingSphere(-50.0f, 0.0f, 0.0f, 8.0f);
 		}
