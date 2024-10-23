@@ -187,6 +187,7 @@
     <ClInclude Include="GameTime.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="l3DBillboard.h" />
+    <ClInclude Include="lightDemo.h" />
     <ClInclude Include="meshFromAssimp.h" />
     <ClInclude Include="redfloat.h" />
     <ClInclude Include="Texture_Loader.h" />

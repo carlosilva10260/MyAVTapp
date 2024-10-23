@@ -41,6 +41,7 @@
 #include "meshFromAssimp.h"
 #include "avtFreeType.h"
 
+#include "lightDemo.h"
 #include "camera.h"
 #include "boat.h"
 #include "waterCreatureManager.h"
@@ -139,6 +140,7 @@ int spotON = 1;
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
+vector<struct MyMesh> stencilMeshes;
 vector<struct MyMesh> skyMesh;
 vector<struct MyMesh> flareMeshes;
 vector<struct MyMesh> particleMeshes;
@@ -472,14 +474,104 @@ static void setupRender() {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
+	GLint m_view[4];
+	glGetIntegerv(GL_VIEWPORT, m_view);
+	float ratio = (m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
+
 	if (activeCamera == 2) {
+		/* create a diamond shaped stencil area */
+		pushMatrix(PROJECTION);
+		loadIdentity(PROJECTION);
+		if (ratio <= 0)
+			ortho(-2.0, 2.0, -2.0 * (GLfloat)WinY / (GLfloat)WinX,
+				2.0 * (GLfloat)WinY / (GLfloat)WinX, -10, 10);
+		else
+			ortho(-2.0 * ratio,
+				2.0 * ratio, -2.0, 2.0, -10, 10);
+
+		// load identity matrices for Model-View
+		pushMatrix(VIEW);
+		loadIdentity(VIEW);
+		pushMatrix(MODEL);
+		loadIdentity(MODEL);
+
+		glUseProgram(shader.getProgramIndex());
+
+		//não vai ser preciso enviar o material pois o cubo não é desenhado
+
+		//rotate(MODEL, 45.0f, 0.0, 0.0, 1.0);
+		translate(MODEL, -2.0f, -2.0f, -0.5f);
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		glClear(GL_STENCIL_BUFFER_BIT);
+
+		glStencilFunc(GL_NEVER, 0x1, 0x1);
+		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+
+		glBindVertexArray(stencilMeshes[0].vao);
+		glDrawElements(stencilMeshes[0].type, stencilMeshes[0].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		// Configure stencil to pass only where stencil value equals 1
+		glStencilFunc(GL_EQUAL, 1, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		loadIdentity(PROJECTION);
+		perspective(90.0f, ratio, 1.0f, 1000.0f);
+
+		float heightOffset = 1.0f; // Adjust to raise the camera above the boat's position
+		float lookBackDistance = 100.0f; // How far back to look
+
+		// Boat's position and direction
+		std::array<float, 3> boatPos = boat.pos;   // Boat's position (x, y, z)
+		std::array<float, 3> boatDir = boat.dir;   // Boat's forward direction vector (normalized)
+
+		// Calculate the reverse direction (looking back)
+		std::array<float, 3> reverseDir = { -boatDir[0], -boatDir[1], -boatDir[2] };
+
+		// Position the camera behind the boat along the reverse direction
+		float camX = boatPos[0];
+		float camY = boatPos[1] + 3.0; // Slightly above the boat
+		float camZ = boatPos[2];
+
+		// Set the camera's position
+		cams[activeCamera].setPos({ camX, camY, camZ });
+
+		// Set the camera's target further back along the reverse direction
+		float targetX = camX + reverseDir[0] * lookBackDistance;
+		float targetY = boatPos[1]; // Keep the same height as camera position
+		float targetZ = camZ + reverseDir[2] * lookBackDistance;
+
+		// Set the camera's target
+		cams[activeCamera].setTarget({ targetX, targetY, targetZ });
+
+		lookAt(camX, camY, camZ, targetX, targetY, targetZ, 0, 1, 0);
+
+		renderSkybox();
+		renderTree();
+		renderFloats();
+		renderCreatures();
+		renderBoat();
+		renderIslands();
+		renderWater();
+
+		popMatrix(MODEL);
+		popMatrix(VIEW);
+		popMatrix(PROJECTION);
+
+		// Configure stencil to pass only where stencil value is not equal to 1
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
 		// Convert alpha and beta to radians for trigonometric functions
 		float alphaRad = cams[activeCamera].getAlpha() * 3.14159f / 180.0f;
 		float betaRad = cams[activeCamera].getBeta() * 3.14159f / 180.0f;
-		float r = cams[activeCamera].getR();  // Distance from boat
+		r = cams[activeCamera].getR();  // Distance from boat
 
 		// Use the boat's direction vector to offset the camera position
-		std::array<float, 3> boatDir = boat.dir;  // Direction vector (normalized)
 		float boatForwardX = boatDir[0];
 		float boatForwardZ = boatDir[2];
 
@@ -488,18 +580,20 @@ static void setupRender() {
 		float rotatedZ = boatForwardX * sin(alphaRad) + boatForwardZ * cos(alphaRad);
 
 		// Position the camera behind the boat, adjusted by the rotated direction
-		float camX = boat.pos[0] - rotatedX * r * cos(betaRad);
-		float camY = boat.pos[1] + r * sin(betaRad);  // Adjust vertical position
-		float camZ = boat.pos[2] - rotatedZ * r * cos(betaRad);
+		camX = boat.pos[0] - rotatedX * r * cos(betaRad);
+		camY = boat.pos[1] + r * sin(betaRad);  // Adjust vertical position
+		camZ = boat.pos[2] - rotatedZ * r * cos(betaRad);
 
 		cams[activeCamera].setPos({ camX, camY, camZ });
 
 		// Target the boat's position, using the boat's forward direction
-		float targetX = boat.pos[0] + rotatedX;
-		float targetY = boat.pos[1];
-		float targetZ = boat.pos[2] + rotatedZ;
+		targetX = boat.pos[0] + rotatedX;
+		targetY = boat.pos[1];
+		targetZ = boat.pos[2] + rotatedZ;
 
 		cams[activeCamera].setTarget({ targetX, targetY, targetZ });
+
+
 	}
 
 	const auto cameraPos = cams[activeCamera].getPos();
@@ -508,10 +602,6 @@ static void setupRender() {
 	const auto cameraUp = cams[activeCamera].getUp();
 	// set the camera using a function similar to gluLookAt
 	lookAt(cameraPos[0], cameraPos[1], cameraPos[2], cameraTarget[0], cameraTarget[1], cameraTarget[2], cameraUp[0], cameraUp[1], cameraUp[2]);
-
-	GLint m_view[4];
-	glGetIntegerv(GL_VIEWPORT, m_view);
-	float ratio = (m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
 	loadIdentity(PROJECTION);
 	if (cameraType == 1) {
 		ortho(ratio * (-100), ratio * 100, -100, 100, 1.0f, 1000.0f);
@@ -829,6 +919,45 @@ static void renderCreatures() {
 		glDrawElements(creatureMeshes[i].type, creatureMeshes[i].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
+		popMatrix(MODEL);
+	}
+}
+
+static void renderIslands() {
+	for (int j = 1; j < 4; ++j) {
+		// send the material
+		sendMaterial(myMeshes[j].mat);
+		pushMatrix(MODEL);
+
+		if (j == 1) { // big island
+			translate(MODEL, 50.0f, 0.0f, 50.0f);
+			scale(MODEL, 1.5, 1, 1.5);
+			islandBoundingSpheres[0] = BoundingSphere(50.0f, 0.0f, 50.0f, 15.0f);
+		}
+		else if (j == 2) { //medium island #1
+			translate(MODEL, 60.0f, 0.0f, -45.0f);
+			islandBoundingSpheres[1] = BoundingSphere(60.0f, 0.0f, -45.0f, 8.0f);
+		}
+		else if (j == 3) { //medium island #2
+			glUniform1i(texMode_uniformId, 6); //cube mapping
+			translate(MODEL, -50.0f, 0.0f, 0.0f);
+			islandBoundingSpheres[2] = BoundingSphere(-50.0f, 0.0f, 0.0f, 8.0f);
+		}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[j].vao);
+
+		glDrawElements(myMeshes[j].type, myMeshes[j].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		glUniform1i(texMode_uniformId, 0);
 		popMatrix(MODEL);
 	}
 }
@@ -1276,77 +1405,10 @@ static void renderScene(void) {
 	renderCreatures();
 	renderBoat();
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
-
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
-
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
-
-	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
-
-	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[6]);
-	
-
-	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
-	glUniform1i(tex_loc0, 0);
-	glUniform1i(tex_loc1, 1);
-	glUniform1i(tex_loc2, 2);
-	glUniform1i(tex_loc3, 3);
-	glUniform1i(tex_loc4, 4);
-	glUniform1i(tex_normalMap_loc, 5);
-	glUniform1i(tex_cube_loc, 6);
-
-
 	float particle_color[4];
 	GLint loc;
 
-	for (int j = 1; j < 4; ++j) {
-		// send the material
-		sendMaterial(myMeshes[j].mat);
-		pushMatrix(MODEL);
-
-		if (j == 1) { // big island
-			translate(MODEL, 50.0f, 0.0f, 50.0f);
-			scale(MODEL, 1.5, 1, 1.5);
-			islandBoundingSpheres[0] = BoundingSphere(50.0f, 0.0f, 50.0f, 15.0f);
-		}
-		else if (j == 2) { //medium island #1
-			translate(MODEL, 60.0f, 0.0f, -45.0f);
-			islandBoundingSpheres[1] = BoundingSphere(60.0f, 0.0f, -45.0f, 8.0f);
-		}
-		else if (j == 3) { //medium island #2
-			glUniform1i(texMode_uniformId, 6); //cube mapping
-			translate(MODEL, -50.0f, 0.0f, 0.0f);
-			islandBoundingSpheres[2] = BoundingSphere(-50.0f, 0.0f, 0.0f, 8.0f);
-		}
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[j].vao);
-
-		glDrawElements(myMeshes[j].type, myMeshes[j].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		glUniform1i(texMode_uniformId, 0);
-		popMatrix(MODEL);
-	}
+	renderIslands();
 
 	renderWater();
 
@@ -1871,6 +1933,16 @@ void init()
 	float shininess = 3000.0f;
 	int texcount = 0;
 
+	// create geometry and VAO of the stencil cube
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, h20_amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, h20_diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, h20_spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	stencilMeshes.push_back(amesh);
+
 	//Create Plane/Water
 	amesh = createQuad(200, 200);
 	memcpy(amesh.mat.ambient, h20_amb, 4 * sizeof(float));
@@ -2116,6 +2188,9 @@ void init()
 	glEnable(GL_MULTISAMPLE);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
+	glClearStencil(0x0);
+	glEnable(GL_STENCIL_TEST);
+
 }
 
 // ------------------------------------------------------------
@@ -2128,7 +2203,7 @@ int main(int argc, char** argv) {
 
 	//  GLUT initialization
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_STENCIL);
 
 	glutInitContextVersion(4, 3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
