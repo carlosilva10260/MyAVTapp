@@ -469,17 +469,17 @@ void changeSize(int w, int h) {
 
 static void setupRender() {
 	FrameCount++;
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glClearStencil(0x0);
 	// load identity matrices
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
 	GLint m_view[4];
 	glGetIntegerv(GL_VIEWPORT, m_view);
-	float ratio = (m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
-
+	float ratio = (static_cast<float>(m_view[2]) - m_view[0]) / (m_view[3] - m_view[1]);
 	if (activeCamera == 2) {
-		/* create a diamond shaped stencil area */
+		/* create a square shaped stencil area */
 		pushMatrix(PROJECTION);
 		loadIdentity(PROJECTION);
 		if (ratio <= 0)
@@ -500,7 +500,7 @@ static void setupRender() {
 		//não vai ser preciso enviar o material pois o cubo não é desenhado
 
 		//rotate(MODEL, 45.0f, 0.0, 0.0, 1.0);
-		translate(MODEL, -2.0f, -2.0f, -0.5f);
+		translate(MODEL, -2.0f * ratio, -2.0f, 0.0f);
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
 		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
@@ -519,11 +519,16 @@ static void setupRender() {
 		// Configure stencil to pass only where stencil value equals 1
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		float screenWOrtho = 4 * ratio;
+		float screenHOrtho = 4;
+		float screenHView = WinY / screenHOrtho;
+		float screenWView = WinX / screenWOrtho;
+		glViewport(0, 0, screenWView, screenHView);
 		loadIdentity(PROJECTION);
-		perspective(90.0f, ratio, 1.0f, 1000.0f);
+		perspective(73.13f, ratio, 1.0f, 1000.0f);
 
 		float heightOffset = 1.0f; // Adjust to raise the camera above the boat's position
-		float lookBackDistance = 100.0f; // How far back to look
+		float lookBackDistance = 10.0f; // How far back to look
 
 		// Boat's position and direction
 		std::array<float, 3> boatPos = boat.pos;   // Boat's position (x, y, z)
@@ -533,9 +538,9 @@ static void setupRender() {
 		std::array<float, 3> reverseDir = { -boatDir[0], -boatDir[1], -boatDir[2] };
 
 		// Position the camera behind the boat along the reverse direction
-		float camX = boatPos[0];
-		float camY = boatPos[1] + 3.0; // Slightly above the boat
-		float camZ = boatPos[2];
+		float camX = boatPos[0] + boat.dir[0] * 5;
+		float camY = boatPos[1] + 5.0; // Slightly above the boat
+		float camZ = boatPos[2] + boat.dir[2] * 5;
 
 		// Set the camera's position
 		cams[activeCamera].setPos({ camX, camY, camZ });
@@ -551,7 +556,7 @@ static void setupRender() {
 		lookAt(camX, camY, camZ, targetX, targetY, targetZ, 0, 1, 0);
 
 		renderSkybox();
-		renderTree();
+		// renderTree();
 		renderFloats();
 		renderCreatures();
 		renderBoat();
@@ -561,6 +566,8 @@ static void setupRender() {
 		popMatrix(MODEL);
 		popMatrix(VIEW);
 		popMatrix(PROJECTION);
+
+		glViewport(m_view[0], m_view[1], m_view[2], m_view[3]);
 
 		// Configure stencil to pass only where stencil value is not equal to 1
 		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -604,14 +611,14 @@ static void setupRender() {
 	lookAt(cameraPos[0], cameraPos[1], cameraPos[2], cameraTarget[0], cameraTarget[1], cameraTarget[2], cameraUp[0], cameraUp[1], cameraUp[2]);
 	loadIdentity(PROJECTION);
 	if (cameraType == 1) {
-		ortho(ratio * (-100), ratio * 100, -100, 100, 1.0f, 1000.0f);
+		ortho(-100, 100, -100, 100, 1.0f, 1000.0f);
 	}
 	else {
 		if (activeCamera == 2) {
-			perspective(75.0f, ratio, 1.0f, 1000.0f);
+			perspective(73.13f, ratio, 1.0f, 1000.0f);
 		}
 		else {
-			perspective(53.13f, ratio, 1.0f, 1000.0f);
+			perspective(41.0f, ratio, 1.0f, 1000.0f);
 		}
 	}
 
