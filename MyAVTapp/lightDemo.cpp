@@ -71,7 +71,7 @@ unsigned int FrameCount = 0;
 Assimp::Importer importer1;
 const aiScene* scene1;
 float scaleFactor1;
-GLuint* textureIds1;  //for the backpack
+GLuint* textureIds1;  //for the spider
 char model_dir[50];
 
 //shaders
@@ -144,7 +144,7 @@ vector<struct MyMesh> stencilMeshes;
 vector<struct MyMesh> skyMesh;
 vector<struct MyMesh> flareMeshes;
 vector<struct MyMesh> particleMeshes;
-vector<struct MyMesh> myMeshes1; //backpack array
+vector<struct MyMesh> myMeshes1; //spider array
 array<BoundingSphere, 3> islandBoundingSpheres;
 vector<struct MyMesh> boatMeshes;
 vector<struct MyMesh> treeMeshes;
@@ -459,6 +459,9 @@ void changeSize(int w, int h) {
 	livesY = 728.0f + hDiff;
 	timeX = std::max(700.0f + wDiff, 0.0f);
 	timeY = 728.0f + hDiff;
+
+	WinX = w;
+	WinY = h;
 }
 
 
@@ -538,9 +541,9 @@ static void setupRender() {
 		std::array<float, 3> reverseDir = { -boatDir[0], -boatDir[1], -boatDir[2] };
 
 		// Position the camera behind the boat along the reverse direction
-		float camX = boatPos[0] + boat.dir[0] * 5;
-		float camY = boatPos[1] + 5.0; // Slightly above the boat
-		float camZ = boatPos[2] + boat.dir[2] * 5;
+		float camX = boatPos[0] + boat.dir[0] * 3;
+		float camY = boatPos[1] + 3.0; // Slightly above the boat
+		float camZ = boatPos[2] + boat.dir[2] * 3;
 
 		// Set the camera's position
 		cams[activeCamera].setPos({ camX, camY, camZ });
@@ -555,11 +558,128 @@ static void setupRender() {
 
 		lookAt(camX, camY, camZ, targetX, targetY, targetZ, 0, 1, 0);
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[6]);
+
+
+		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+		glUniform1i(tex_loc0, 0);
+		glUniform1i(tex_loc1, 1);
+		glUniform1i(tex_loc2, 2);
+		glUniform1i(tex_loc3, 3);
+		glUniform1i(tex_loc4, 4);
+		glUniform1i(tex_normalMap_loc, 5);
+		glUniform1i(tex_cube_loc, 6);
+
+		//send the light position in eye coordinates
+	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
+
+		float res[4];
+		multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
+		glUniform4fv(lPos_uniformId, 1, res);
+
+		//point light
+		multMatrixPoint(VIEW, pointLightPos[0], res);
+		glUniform4fv(point_loc0, 1, res);
+		multMatrixPoint(VIEW, pointLightPos[1], res);
+		glUniform4fv(point_loc1, 1, res);
+		multMatrixPoint(VIEW, pointLightPos[2], res);
+		glUniform4fv(point_loc2, 1, res);
+		multMatrixPoint(VIEW, pointLightPos[3], res);
+		glUniform4fv(point_loc3, 1, res);
+		multMatrixPoint(VIEW, pointLightPos[4], res);
+		glUniform4fv(point_loc4, 1, res);
+		multMatrixPoint(VIEW, pointLightPos[5], res);
+		glUniform4fv(point_loc5, 1, res);
+
+		glUniform1i(point_toggle, pointON);
+
+
+		//directional light
+		multMatrixPoint(VIEW, directionalLightPos, res);
+		glUniform4fv(dir_loc, 1, res);
+
+		glUniform1i(dir_toggle, directionalON);
+
+
+
+
+		//spotlights
+		multMatrixPoint(VIEW, spotLightPos[0], res);
+		glUniform4fv(spot_pos_loc0, 1, res);
+		multMatrixPoint(VIEW, spotLightPos[1], res);
+		glUniform4fv(spot_pos_loc1, 1, res);
+
+		multMatrixPoint(VIEW, spotLightDir[0], res);
+		glUniform4fv(spot_dir_loc0, 1, res);
+		multMatrixPoint(VIEW, spotLightDir[1], res);
+		glUniform4fv(spot_dir_loc1, 1, res);
+
+		glUniform1f(spot_angle_loc0, spotLightAngle[0]);
+		glUniform1f(spot_angle_loc1, spotLightAngle[1]);
+
+		glUniform1i(spot_toggle, spotON);
+
+		//pass the toggle for fog
+		glUniform1i(fog_toggle, fogON);
+
+
 		renderSkybox();
-		// renderTree();
+		renderTree();
 		renderFloats();
 		renderCreatures();
 		renderBoat();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[6]);
+
+
+		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+		glUniform1i(tex_loc0, 0);
+		glUniform1i(tex_loc1, 1);
+		glUniform1i(tex_loc2, 2);
+		glUniform1i(tex_loc3, 3);
+		glUniform1i(tex_loc4, 4);
+		glUniform1i(tex_normalMap_loc, 5);
+		glUniform1i(tex_cube_loc, 6);
+
+
 		renderIslands();
 		renderWater();
 
@@ -744,21 +864,22 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 		glUniform1f(loc, myMeshes[nd->mMeshes[n]].mat.shininess);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
 		glUniform1i(loc, myMeshes[nd->mMeshes[n]].mat.texCount);
+		//printf("tex count das aranhas %d\n", myMeshes[nd->mMeshes[n]].mat.texCount);
 
-		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
+		int  diffMapCount = 0;  //read 2 diffuse textures
 
 		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
 
 		glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
 		glUniform1i(specularMap_loc, false);
-		glUniform1ui(diffMapCount_loc, 0);
+		glUniform1i(diffMapCount_loc, 0);
 
 		if (myMeshes[nd->mMeshes[n]].mat.texCount != 0)
 			for (unsigned int i = 0; i < myMeshes[nd->mMeshes[n]].mat.texCount; ++i) {
 
 				//Activate a TU with a Texture Object
 				GLuint TU = myMeshes[nd->mMeshes[n]].texUnits[i];
-				glActiveTexture(GL_TEXTURE1 + TU);
+				glActiveTexture(GL_TEXTURE0 + TU);
 				glBindTexture(GL_TEXTURE_2D, textureIds[TU]);
 
 				if (myMeshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
@@ -766,22 +887,25 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
 						glUniform1i(loc, TU);
-						glUniform1ui(diffMapCount_loc, diffMapCount);
+						glUniform1i(diffMapCount_loc, diffMapCount);
 					}
 					else if (diffMapCount == 1) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
 						glUniform1i(loc, TU);
-						glUniform1ui(diffMapCount_loc, diffMapCount);
+						glUniform1i(diffMapCount_loc, diffMapCount);
+						//printf("apliquei a segunda textura difusa\n");
 					}
 					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
 				}
 				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
+					//printf("encontrei uma textura especular\n");
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
 					glUniform1i(loc, TU);
 					glUniform1i(specularMap_loc, true);
 				}
 				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
+					//printf("encontrei uma textura normal");
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
 					if (normalMapKey)
 						glUniform1i(normalMap_loc, normalMapKey);
@@ -853,8 +977,16 @@ static void renderFloats() {
 			pointLightPos[1][0] = floats[1].pos[0];
 			pointLightPos[1][1] = floats[1].pos[1] + 6;
 			pointLightPos[1][2] = floats[1].pos[2];
+
+			if (bumpmapping) {
+				glUniform1i(texMode_uniformId, 5);
+			}
+			else {
+				glUniform1i(texMode_uniformId, 7); // draw textured quads
+			}
 		}
 		if (i == 4 || i == 5) {
+			glUniform1i(texMode_uniformId, 0);
 			translate(MODEL, floats[2].pos[0], floats[2].pos[1], floats[2].pos[2]);
 			pointLightPos[2][0] = floats[2].pos[0];
 			pointLightPos[2][1] = floats[2].pos[1] + 6;
@@ -1068,12 +1200,7 @@ void renderTree() {
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	if (bumpmapping) {
-		glUniform1i(texMode_uniformId, 5);
-	}
-	else {
-		glUniform1i(texMode_uniformId, 2); // draw textured quads
-	}
+	glUniform1i(texMode_uniformId, 2); // draw textured quads
 
 	for (int i = -4; i < 4; i++) {
 		for (int j = -4; j < 4; j++) {
@@ -1411,6 +1538,37 @@ static void renderScene(void) {
 	renderFloats();
 	renderCreatures();
 	renderBoat();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[6]);
+
+
+	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+	glUniform1i(tex_loc0, 0);
+	glUniform1i(tex_loc1, 1);
+	glUniform1i(tex_loc2, 2);
+	glUniform1i(tex_loc3, 3);
+	glUniform1i(tex_loc4, 4);
+	glUniform1i(tex_normalMap_loc, 5);
+	glUniform1i(tex_cube_loc, 6);
 
 	float particle_color[4];
 	GLint loc;
@@ -1809,7 +1967,7 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	//lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	//Pos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
 	point_loc0 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
 	point_loc1 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[1].position");
 	point_loc2 = glGetUniformLocation(shader.getProgramIndex(), "pointLights[2].position");
@@ -1912,14 +2070,14 @@ void init()
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camY = r * sin(beta * 3.14f / 180.0f);*/
 
-	std::string filepath1 = "backpack/backpack.obj";
+	std::string filepath1 = "spider/spider.obj";
 
-	//Import the model obj, a backpack
+	//Import the model obj, a spider
 	if (!Import3DFromFile(filepath1, importer1, scene1, scaleFactor1)) {
 		exit(0);
 	}
-	strcpy(model_dir, "backpack/");
-	//creation of Mymesh array with VAO Geometry and Material and array of Texture Objs for the backpack model
+	strcpy(model_dir, "spider/");
+	//creation of Mymesh array with VAO Geometry and Material and array of Texture Objs for the spider model
 	myMeshes1 = createMeshFromAssimp(scene1, textureIds1);
 
 	cams[0].setPos({ 0, 200, 0 });

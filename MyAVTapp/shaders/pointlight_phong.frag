@@ -83,7 +83,7 @@ void main() {
 		n = normalize(DataIn.normal);
 	vec3 e = normalize(DataIn.eye);
 	vec3 l = normalize(vec3(dirLight.direction));
-	float intensity = max(dot(n,l), 0.0);
+	float intensity=0;
 
 
 
@@ -111,6 +111,7 @@ void main() {
 	
 
 	 if (dirON == 1) {
+		intensity = max(dot(n,l), 0.0);
 		if (intensity > 0.0) {
 			vec3 h = normalize(l + e);
 			float intSpec = max(dot(h,n), 0.0);
@@ -123,7 +124,7 @@ void main() {
 	if ( pointON == 1){
 		for (int i = 0; i < 6; i++) {
 			l = normalize(vec3(pointLights[i].position) + DataIn.eye);
-			float intensity = max(dot(n,l), 0.0);
+			intensity = max(dot(n,l), 0.0);
 			if (intensity > 0.0) {
 				vec3 h = normalize(l + e);
 				float intSpec = max(dot(h,n), 0.0);
@@ -141,7 +142,7 @@ void main() {
             l = normalize(vec3(spotLights[i].position) + DataIn.eye);
             //only if the angle is smaller than the spot angle
             if(cos(radians(spotLights[i].angle)) < dot(l, normalize(vec3(spotLights[i].direction)))) {
-				float intensity = max(dot(n,l), 0.0);
+				intensity = max(dot(n,l), 0.5);
                 if (intensity > 0.0) {
                     vec3 h = normalize(l + e);
                     float intSpec = max(dot(h,n), 0.0);
@@ -175,7 +176,7 @@ void main() {
         colorOut = max(colorOut + intensity*texel*texel1 + spec, mat.ambient);
 		colorOut = vec4(colorOut.rgb, diff.a);
     }
-	else if (texMode == 2 || texMode == 5) {
+	else if (texMode == 2) {
 		texel = texture(texmap3, DataIn.tex_coord); 
 		if(texel.a == 0.0) discard;
 		else
@@ -192,6 +193,12 @@ void main() {
 			colorOut = diff * texel;
 	} else if (texMode == 6) { //SkyBox
 		colorOut = texture(cubeMap, DataIn.skyboxtex_coord);
-	}
+	} else if (texMode == 7 || texMode == 5) { //Normal Map
+		texel = texture(texmap0, DataIn.tex_coord); 
+		if(texel.a == 0.0) discard;
+		else
+			colorOut = vec4(max(intensity*texel.rgb + vec3(spec), 0.1*texel.rgb), texel.a);
+
+	} 
 
 }
