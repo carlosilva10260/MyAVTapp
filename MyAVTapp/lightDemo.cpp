@@ -71,7 +71,7 @@ unsigned int FrameCount = 0;
 Assimp::Importer importer1;
 const aiScene* scene1;
 float scaleFactor1;
-GLuint* textureIds1;  //for the backpack
+GLuint* textureIds1;  //for the spider
 char model_dir[50];
 
 //shaders
@@ -144,7 +144,7 @@ vector<struct MyMesh> stencilMeshes;
 vector<struct MyMesh> skyMesh;
 vector<struct MyMesh> flareMeshes;
 vector<struct MyMesh> particleMeshes;
-vector<struct MyMesh> myMeshes1; //backpack array
+vector<struct MyMesh> myMeshes1; //spider array
 array<BoundingSphere, 3> islandBoundingSpheres;
 vector<struct MyMesh> boatMeshes;
 vector<struct MyMesh> treeMeshes;
@@ -520,7 +520,7 @@ static void setupRender() {
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 		loadIdentity(PROJECTION);
-		perspective(90.0f, ratio, 1.0f, 1000.0f);
+		perspective(120.0f, ratio, 1.0f, 1000.0f);
 
 		float heightOffset = 1.0f; // Adjust to raise the camera above the boat's position
 		float lookBackDistance = 100.0f; // How far back to look
@@ -802,14 +802,15 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 		glUniform1f(loc, myMeshes[nd->mMeshes[n]].mat.shininess);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
 		glUniform1i(loc, myMeshes[nd->mMeshes[n]].mat.texCount);
+		//printf("tex count das aranhas %d\n", myMeshes[nd->mMeshes[n]].mat.texCount);
 
-		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
+		int  diffMapCount = 0;  //read 2 diffuse textures
 
 		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
 
 		glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
 		glUniform1i(specularMap_loc, false);
-		glUniform1ui(diffMapCount_loc, 0);
+		glUniform1i(diffMapCount_loc, 0);
 
 		if (myMeshes[nd->mMeshes[n]].mat.texCount != 0)
 			for (unsigned int i = 0; i < myMeshes[nd->mMeshes[n]].mat.texCount; ++i) {
@@ -824,22 +825,25 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
 						glUniform1i(loc, TU);
-						glUniform1ui(diffMapCount_loc, diffMapCount);
+						glUniform1i(diffMapCount_loc, diffMapCount);
 					}
 					else if (diffMapCount == 1) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
 						glUniform1i(loc, TU);
-						glUniform1ui(diffMapCount_loc, diffMapCount);
+						glUniform1i(diffMapCount_loc, diffMapCount);
+						//printf("apliquei a segunda textura difusa\n");
 					}
 					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
 				}
 				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
+					//printf("encontrei uma textura especular\n");
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
 					glUniform1i(loc, TU);
 					glUniform1i(specularMap_loc, true);
 				}
 				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
+					//printf("encontrei uma textura normal");
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
 					if (normalMapKey)
 						glUniform1i(normalMap_loc, normalMapKey);
@@ -911,8 +915,16 @@ static void renderFloats() {
 			pointLightPos[1][0] = floats[1].pos[0];
 			pointLightPos[1][1] = floats[1].pos[1] + 6;
 			pointLightPos[1][2] = floats[1].pos[2];
+
+			if (bumpmapping) {
+				glUniform1i(texMode_uniformId, 5);
+			}
+			else {
+				glUniform1i(texMode_uniformId, 7); // draw textured quads
+			}
 		}
 		if (i == 4 || i == 5) {
+			glUniform1i(texMode_uniformId, 0);
 			translate(MODEL, floats[2].pos[0], floats[2].pos[1], floats[2].pos[2]);
 			pointLightPos[2][0] = floats[2].pos[0];
 			pointLightPos[2][1] = floats[2].pos[1] + 6;
@@ -1126,12 +1138,7 @@ void renderTree() {
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	if (bumpmapping) {
-		glUniform1i(texMode_uniformId, 5);
-	}
-	else {
-		glUniform1i(texMode_uniformId, 2); // draw textured quads
-	}
+	glUniform1i(texMode_uniformId, 2); // draw textured quads
 
 	for (int i = -4; i < 4; i++) {
 		for (int j = -4; j < 4; j++) {
@@ -1898,7 +1905,7 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	//lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	//Pos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
 	point_loc0 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[0].position");
 	point_loc1 = glGetUniformLocation(shader.getProgramIndex(),"pointLights[1].position");
 	point_loc2 = glGetUniformLocation(shader.getProgramIndex(), "pointLights[2].position");
@@ -2001,14 +2008,14 @@ void init()
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camY = r * sin(beta * 3.14f / 180.0f);*/
 
-	std::string filepath1 = "backpack/backpack.obj";
+	std::string filepath1 = "spider/spider.obj";
 
-	//Import the model obj, a backpack
+	//Import the model obj, a spider
 	if (!Import3DFromFile(filepath1, importer1, scene1, scaleFactor1)) {
 		exit(0);
 	}
-	strcpy(model_dir, "backpack/");
-	//creation of Mymesh array with VAO Geometry and Material and array of Texture Objs for the backpack model
+	strcpy(model_dir, "spider/");
+	//creation of Mymesh array with VAO Geometry and Material and array of Texture Objs for the spider model
 	myMeshes1 = createMeshFromAssimp(scene1, textureIds1);
 
 	cams[0].setPos({ 0, 200, 0 });
