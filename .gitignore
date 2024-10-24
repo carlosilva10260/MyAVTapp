@@ -80,6 +80,7 @@ StyleCopReport.xml
 *.meta
 *.obj
 !MyAVTApp/backpack/backpack.obj
+!MyAVTApp/spider/spider.obj
 *.iobj
 *.pch
 *.pdb
