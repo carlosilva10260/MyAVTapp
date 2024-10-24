@@ -1694,11 +1694,11 @@ static void renderScene(void) {
 		RenderText(shaderText, "Pause! Press 'P' to unpause.", 500.0f, 300.0f, 0.8f, 1.0f, 1.0f, 1.0f);
 	}
 	if (lives == 0) {
-		RenderText(shaderText, "Game Over! Press 'R' to restart.", 100.0f, 100.0f, 0.8f, 1.0f, 1.0f, 1.0f);
+		RenderText(shaderText, "Game Over! Press 'R' to restart.", 500.0f, 300.0f, 0.8f, 1.0f, 1.0f, 1.0f);
 		restart = true;
 	}
 	if (goal_flag) {
-		RenderText(shaderText, "You won! Press 'R' to try again!", 100.0f, 100.0f, 0.8f, 1.0f, 1.0f, 1.0f);
+		RenderText(shaderText, "You won! Press 'R' to try again!", 500.0f, 300.0f, 0.8f, 1.0f, 1.0f, 1.0f);
 		restart = true;
 	}
 	popMatrix(PROJECTION);
