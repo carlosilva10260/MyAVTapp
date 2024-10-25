@@ -236,6 +236,7 @@ int lastTime = 0;
 bool paused = false;
 bool restart = false;
 bool goal_flag = false;
+bool stop = false;
 
 enum CollisionType { NONE, CREATURE, RED_FLOAT, ISLAND, OUT_OF_BOUNDS };
 
@@ -362,6 +363,7 @@ pair<CollisionType, int> isBoatColliding() {
 		if (AABB::isColliding(floats[i].getFloatAABB(), boat.getBoatAABB())) {
 			if (floats[i].yellow) {
 				fireworks = 1;
+				stop = true;
 				iniParticles();
 			}
 			printf("before %f %f %f\n", floats[i].pos[0], floats[i].pos[1], floats[i].pos[2]);
@@ -1744,7 +1746,10 @@ void processKeys(unsigned char key, int xx, int yy)
 		restartGame();
 		restart = false;
 		goal_flag = false;
+		stop = false;
 	}
+
+	if (stop) return;
 
 	if (restart) return;
 
